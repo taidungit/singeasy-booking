@@ -156,31 +156,98 @@ const ShopDetail = () => {
           <aside>
             <div className="sticky top-24 bg-background card-shadow-elevated rounded-2xl p-6 border border-border">
               <div className="flex items-baseline gap-1.5 mb-1">
-                <span className="text-2xl font-bold text-foreground">${shop.priceFrom}</span>
-                <span className="text-sm text-muted-foreground">/ hour</span>
+                {/* <span className="text-2xl font-bold text-foreground">${shop.priceFrom}</span>
+                <span className="text-sm text-muted-foreground">/ hour</span> */}
+                <span className="inline-flex items-center gap-1 text-sm font-medium bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-full mb-4">
+                  🔥 Top rated venue
+                </span>
               </div>
               <div className="flex items-center gap-1.5 mb-6">
                 <RatingStars rating={shop.rating} size="sm" />
                 <span className="text-sm text-muted-foreground">{shop.reviewCount} reviews</span>
               </div>
 
-              {rooms.filter((r) => r.available).length === 0 ? (
-                <div className="text-center py-4">
-                  <p className="text-muted-foreground text-sm">No rooms currently available.</p>
-                </div>
-              ) : (
-                <>
-                  <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-                    Select a room to book
-                  </p>
-                  <div className="space-y-2 mb-4 max-h-52 overflow-y-auto">
-                    {rooms.filter((r) => r.available).map((room) => (
-                      <RoomCard key={room.id} room={room} shopId={shop.id} shopName={shop.name} />
-                    ))}
-                  </div>
-                  <BookingForm />
-                </>
-              )}
+{/* Venue info */}
+<div className="space-y-6">
+
+  {/* Location */}
+  <div className="flex items-start gap-3 text-sm">
+    <MapPin className="w-4 h-4 mt-0.5 text-primary" />
+    <div>
+      <p className="font-medium text-foreground">Location</p>
+      <p className="text-muted-foreground">{shop.address}</p>
+    </div>
+  </div>
+
+  {/* Opening hours */}
+  <div className="flex items-start gap-3 text-sm">
+    <Clock className="w-4 h-4 mt-0.5 text-primary" />
+    <div>
+      <p className="font-medium text-foreground">Opening hours</p>
+      <p className="text-muted-foreground">{shop.openHours}</p>
+    </div>
+  </div>
+
+  {/* Phone */}
+  <div className="flex items-start gap-3 text-sm">
+    <Phone className="w-4 h-4 mt-0.5 text-primary" />
+    <div>
+      <p className="font-medium text-foreground">Contact</p>
+      <p className="text-muted-foreground">{shop.phone}</p>
+    </div>
+  </div>
+
+  {/* Divider */}
+  <div className="border-t border-border pt-5">
+
+    {/* Highlights */}
+    <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+      Highlights
+    </p>
+
+    <ul className="space-y-2 text-sm text-muted-foreground">
+      <li className="flex items-center gap-2">
+        🎤 Premium karaoke sound system
+      </li>
+      <li className="flex items-center gap-2">
+        🎵 80,000+ song library
+      </li>
+      <li className="flex items-center gap-2">
+        🍸 Cocktail & drink service
+      </li>
+      <li className="flex items-center gap-2">
+        🎥 4K screens in VIP rooms
+      </li>
+    </ul>
+  </div>
+
+  {/* Amenities */}
+  <div className="border-t border-border pt-5">
+
+    <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+      Amenities
+    </p>
+
+    <div className="flex flex-wrap gap-2">
+      <span className="text-xs bg-muted px-2 py-1 rounded-full">
+        Private rooms
+      </span>
+      <span className="text-xs bg-muted px-2 py-1 rounded-full">
+        Wireless microphones
+      </span>
+      <span className="text-xs bg-muted px-2 py-1 rounded-full">
+        HD screens
+      </span>
+      <span className="text-xs bg-muted px-2 py-1 rounded-full">
+        Food service
+      </span>
+      <span className="text-xs bg-muted px-2 py-1 rounded-full">
+        Air conditioning
+      </span>
+    </div>
+  </div>
+
+</div>
             </div>
           </aside>
         </div>
