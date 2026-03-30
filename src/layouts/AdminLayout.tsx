@@ -21,7 +21,6 @@ const AdminLayout = () => {
     { name: 'Dashboard', path: '/admin', icon: <LayoutDashboard size={20} /> },
     { name: 'Quản lý Karaoke', path: '/admin/shops', icon: <Store size={20} /> },
     { name: 'Quản lý Người dùng', path: '/admin/users', icon: <Users size={20} /> },
-    { name: 'Cài đặt', path: '/admin/settings', icon: <Settings size={20} /> },
   ];
 
   return (
@@ -33,7 +32,7 @@ const AdminLayout = () => {
           <div className="bg-blue-500 p-2 rounded-lg">
             <Mic2 size={24} className="text-white" />
           </div>
-          <span className="font-bold text-xl text-white tracking-tight">SingEasy</span>
+          <span className="font-bold text-xl text-white tracking-tight">Royal</span>
         </div>
 
         {/* Navigation Links */}

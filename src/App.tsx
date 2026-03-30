@@ -20,6 +20,9 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import ShopManagement from "@/pages/admin/ShopManagement";
 import RoomManagement from "@/pages/admin/RoomManagement";
 import UserManagement from "@/pages/admin/UserManagement"; 
+import ShopForm from "@/pages/admin/ShopForm";
+import RoomForm from "./pages/admin/RoomForm";
+import UserForm from "./pages/admin/UserForm";
 
 const queryClient = new QueryClient();
 
@@ -72,9 +75,18 @@ const App = () => (
                 }
               >
                 <Route index element={<AdminDashboard />} />
+                {/* Shop admin */}
                 <Route path="shops" element={<ShopManagement />} />
+                <Route path="shops/create" element={<ShopForm />} />
+                <Route path="shops/edit/:id" element={<ShopForm />} />
+                {/* Room admin */}
                 <Route path="shops/:shopId/rooms" element={<RoomManagement />} />
+                <Route path="shops/:shopId/rooms/create" element={<RoomForm />} />
+                <Route path="shops/:shopId/rooms/edit/:roomId" element={<RoomForm />} />
+                {/* User admin */}
                 <Route path="users" element={<UserManagement />} />
+                <Route path="users/create" element={<UserForm />} />
+                <Route path="users/edit/:userId" element={<UserForm />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />
