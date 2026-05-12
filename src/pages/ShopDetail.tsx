@@ -73,7 +73,7 @@ const ShopDetail = () => {
         {/* Gallery grid */}
         <div className="grid grid-cols-4 grid-rows-2 gap-3 h-[360px] sm:h-[480px] rounded-3xl overflow-hidden mb-8">
           <div className="col-span-2 row-span-2">
-            <img src={shop.image} alt={shop.name} className="w-full h-full object-cover" />
+            <img src={shop.imageUrl} alt={shop.name} className="w-full h-full object-cover" />
           </div>
           {GALLERY_IMGS.slice(0, 4).map((img, i) => (
             <div key={i} className="overflow-hidden">
@@ -87,9 +87,9 @@ const ShopDetail = () => {
           <div className="lg:col-span-2">
             <header className="mb-6">
               <div className="flex flex-wrap gap-2 mb-3">
-                {shop.tags.map((tag) => (
-                  <span key={tag} className="text-xs font-semibold bg-primary/10 text-primary px-2.5 py-1 rounded-full">
-                    {tag}
+                {shop.labels.map((label) => (
+                  <span key={label} className="text-xs font-semibold bg-primary/10 text-primary px-2.5 py-1 rounded-full">
+                    {label}
                   </span>
                 ))}
               </div>
@@ -99,10 +99,10 @@ const ShopDetail = () => {
                   <MapPin className="w-4 h-4" />{shop.address}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Clock className="w-4 h-4" />{shop.openHours}
+                  <Clock className="w-4 h-4" />{shop.openingHours}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Phone className="w-4 h-4" />{shop.phone}
+                  <Phone className="w-4 h-4" />{shop.phoneNumber}
                 </span>
               </div>
               <div className="flex items-center gap-2 mt-3">
@@ -156,8 +156,6 @@ const ShopDetail = () => {
           <aside>
             <div className="sticky top-24 bg-background card-shadow-elevated rounded-2xl p-6 border border-border">
               <div className="flex items-baseline gap-1.5 mb-1">
-                {/* <span className="text-2xl font-bold text-foreground">${shop.priceFrom}</span>
-                <span className="text-sm text-muted-foreground">/ hour</span> */}
                 <span className="inline-flex items-center gap-1 text-sm font-medium bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-full mb-4">
                   🔥 Top rated venue
                 </span>
@@ -184,7 +182,7 @@ const ShopDetail = () => {
     <Clock className="w-4 h-4 mt-0.5 text-primary" />
     <div>
       <p className="font-medium text-foreground">Opening hours</p>
-      <p className="text-muted-foreground">{shop.openHours}</p>
+      <p className="text-muted-foreground">{shop.openingHours}</p>
     </div>
   </div>
 
@@ -193,7 +191,7 @@ const ShopDetail = () => {
     <Phone className="w-4 h-4 mt-0.5 text-primary" />
     <div>
       <p className="font-medium text-foreground">Contact</p>
-      <p className="text-muted-foreground">{shop.phone}</p>
+      <p className="text-muted-foreground">{shop.phoneNumber}</p>
     </div>
   </div>
 

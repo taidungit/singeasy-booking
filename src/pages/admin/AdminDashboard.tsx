@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Store, DoorOpen, Users, CalendarCheck, TrendingUp } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
+import axiosClient from "@/services/axiosClient";
+import { useEffect, useState } from "react";
 const data = [
   { name: 'Th2', revenue: 4000 }, { name: 'Th3', revenue: 3000 },
   { name: 'Th4', revenue: 5000 }, { name: 'Th5', revenue: 4500 },
@@ -16,6 +17,35 @@ const AdminDashboard = () => {
     { title: "Người dùng", value: "1,240", icon: <Users className="h-5 w-5 text-purple-600" />, desc: "+12% tháng trước" },
     { title: "Đơn đặt phòng", value: "48", icon: <CalendarCheck className="h-5 w-5 text-orange-600" />, desc: "Đang chờ xử lý" },
   ];
+
+// const AdminDashboard = () => {
+//   const [stats, setStats] = useState<any[]>([]);
+//   const [chartData, setChartData] = useState([]);
+//   const [loading, setLoading] = useState(true);
+
+//   useEffect(() => {
+//     const fetchDashboardData = async () => {
+//       try {
+//         const response = await axiosClient.get('/admin/dashboard-summary');
+//         // Giả sử response.data trả về { totalShops, totalRooms, totalUsers, bookingsPending, revenueChart }
+//         const { data } = response;
+        
+//         setStats([
+//           { title: "Tổng số Shop", value: data.totalShops, icon: <Store className="..." />, desc: "Dữ liệu thực tế" },
+//           { title: "Tổng số Phòng", value: data.totalRooms, icon: <DoorOpen className="..." />, desc: `${data.occupancyRate}% công suất` },
+//           // ... tương tự cho các cái khác
+//         ]);
+//         setChartData(data.revenueChart);
+//       } catch (error) {
+//         console.error("Lỗi lấy stats:", error);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+//     fetchDashboardData();
+//   }, []);
+
+//   if (loading) return <div>Đang tải dữ liệu hệ thống...</div>;
 
   return (
     <div className="p-6 space-y-6 bg-slate-50/30 min-h-screen">

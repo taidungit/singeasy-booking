@@ -6,7 +6,7 @@ export interface Room {
   name: string;
   capacity: string;
   pricePerHour: number;
-  image: string;
+  imageUrl: string;
   available: boolean;
   amenities: string[];
 }

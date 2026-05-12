@@ -23,6 +23,9 @@ import UserManagement from "@/pages/admin/UserManagement";
 import ShopForm from "@/pages/admin/ShopForm";
 import RoomForm from "./pages/admin/RoomForm";
 import UserForm from "./pages/admin/UserForm";
+import AdminShopDetail from "./pages/admin/AdminShopDetail";
+import AdminUserDetail from "./pages/admin/AdminUserDetail";
+import BookingManagement from "./pages/admin/BookingManagement";
 
 const queryClient = new QueryClient();
 
@@ -35,8 +38,8 @@ const ProtectedAdminRoute = ({ children }: { children: React.ReactNode }) => {
   if (isLoading) return <div>Loading...</div>;
 
   // Kiểm tra user và quyền admin
-  if (!user || user.role !== 'admin') {
-    return <Navigate to="/" replace />;
+  if (!user || user.role !== 'ADMIN') {
+    return <NotFound />;
   }
 
   return <>{children}</>;
@@ -79,6 +82,7 @@ const App = () => (
                 <Route path="shops" element={<ShopManagement />} />
                 <Route path="shops/create" element={<ShopForm />} />
                 <Route path="shops/edit/:id" element={<ShopForm />} />
+                <Route path="shops/:id" element={<AdminShopDetail />} />
                 {/* Room admin */}
                 <Route path="shops/:shopId/rooms" element={<RoomManagement />} />
                 <Route path="shops/:shopId/rooms/create" element={<RoomForm />} />
@@ -87,6 +91,9 @@ const App = () => (
                 <Route path="users" element={<UserManagement />} />
                 <Route path="users/create" element={<UserForm />} />
                 <Route path="users/edit/:userId" element={<UserForm />} />
+                <Route path="users/:id" element={<AdminUserDetail />} />
+                {/* Booking admin */}
+                <Route path="bookings" element={<BookingManagement />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

@@ -1,11 +1,17 @@
 import { createContext, useContext, useReducer, ReactNode, useEffect } from "react";
+import axios from "axios";
+
+// Cấu hình axios client (có thể tách ra file riêng src/api/axios.ts)
+const api = axios.create({
+  baseURL: "http://localhost:8080/api/v1",
+});
 
 export interface User {
   id: string;
   name: string;
   email: string;
   avatar?: string;
-  role: "admin" | "user";
+  role: string;
 }
 
 interface AuthState {
@@ -16,29 +22,29 @@ interface AuthState {
 }
 
 type AuthAction =
-  | { type: "LOGIN_START" }
+  | { type: "AUTH_START" }
   | { type: "LOGIN_SUCCESS"; payload: User }
-  | { type: "LOGIN_FAILURE"; payload: string }
+  | { type: "AUTH_FAILURE"; payload: string }
   | { type: "LOGOUT" }
   | { type: "CLEAR_ERROR" }
   | { type: "RESTORE_USER"; payload: User }
-  | { type: "AUTH_READY" }; // Action mới để báo hệ thống đã kiểm tra xong
+  | { type: "AUTH_READY" };
 
 const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {
-    case "LOGIN_START":
+    case "AUTH_START":
       return { ...state, isLoading: true, error: null };
     case "LOGIN_SUCCESS":
-      localStorage.setItem("user", JSON.stringify(action.payload));
       return { ...state, isLoading: false, user: action.payload, isAuthenticated: true, error: null };
     case "RESTORE_USER":
       return { ...state, isLoading: false, user: action.payload, isAuthenticated: true };
     case "AUTH_READY":
-      return { ...state, isLoading: false }; // Tắt loading khi không có user trong storage
-    case "LOGIN_FAILURE":
+      return { ...state, isLoading: false };
+    case "AUTH_FAILURE":
       return { ...state, isLoading: false, error: action.payload };
     case "LOGOUT":
       localStorage.removeItem("user");
+      localStorage.removeItem("access_token");
       return { user: null, isAuthenticated: false, isLoading: false, error: null };
     case "CLEAR_ERROR":
       return { ...state, error: null };
@@ -61,7 +67,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(authReducer, {
     user: null,
     isAuthenticated: false,
-    isLoading: true, // Bắt đầu là true để kiểm tra localStorage
+    isLoading: true,
     error: null,
   });
 
@@ -77,46 +83,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         dispatch({ type: "AUTH_READY" });
       }
     } else {
-      // Nếu không có user, phải chuyển isLoading sang false để hiện form login
-      dispatch({ type: "AUTH_READY" }); 
+      dispatch({ type: "AUTH_READY" });
     }
   }, []);
 
-  const login = async (email: string, _password: string) => {
-    dispatch({ type: "LOGIN_START" });
+  const login = async (email: string, password: string) => {
+    dispatch({ type: "AUTH_START" });
     try {
-      await new Promise((res) => setTimeout(res, 800));
+      // Gửi đúng request tới AuthController của Backend
+      const response = await api.post("/auth/login", {
+        username: email, // Backend của bạn dùng LoginDTO có trường username
+        password: password
+      });
 
-      if (email === "admin@gmail.com" && _password === "123456") {
-        dispatch({
-          type: "LOGIN_SUCCESS",
-          payload: { id: "admin-1", name: "Quản trị viên", email, role: "admin" },
-        });
-      } 
-      else if (email === "demo@echo.com" && _password === "password") {
-        dispatch({
-          type: "LOGIN_SUCCESS",
-          payload: { id: "user-1", name: "Alex Chen", email, role: "user" },
-        });
-      } 
-      else {
-        dispatch({ type: "LOGIN_FAILURE", payload: "Sai email hoặc mật khẩu!" });
-      }
-    } catch {
-      dispatch({ type: "LOGIN_FAILURE", payload: "Đã xảy ra lỗi hệ thống." });
+      const { access_token, user } = response.data;
+
+      // Lưu token để các request sau dùng (như Postman)
+      localStorage.setItem("access_token", access_token);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      dispatch({ type: "LOGIN_SUCCESS", payload: user });
+    } catch (error) {
+      const msg = error.response?.data?.message || "Sai email hoặc mật khẩu!";
+      dispatch({ type: "AUTH_FAILURE", payload: msg });
     }
   };
 
-  const register = async (name: string, email: string, _password: string) => {
-    dispatch({ type: "LOGIN_START" });
+  const register = async (name: string, email: string, password: string) => {
+    dispatch({ type: "AUTH_START" });
     try {
-      await new Promise((res) => setTimeout(res, 800));
-      dispatch({
-        type: "LOGIN_SUCCESS",
-        payload: { id: Date.now().toString(), name, email, role: "user" },
+      // Gửi request tới /auth/register
+      await api.post("/auth/register", {
+        name,
+        email,
+        password
       });
-    } catch {
-      dispatch({ type: "LOGIN_FAILURE", payload: "Đăng ký thất bại." });
+
+      // Đăng ký xong có thể chuyển người dùng sang trang Login
+      // Hoặc tự động gọi hàm login() ở trên nếu muốn vào luôn
+      dispatch({ type: "AUTH_READY" });
+      alert("Đăng ký thành công! Hãy đăng nhập.");
+    } catch (error) {
+      // Bắt lỗi "Email đã tồn tại" từ IdInvalidException của Backend
+      const msg = error.response?.data?.message || "Đăng ký thất bại.";
+      dispatch({ type: "AUTH_FAILURE", payload: msg });
     }
   };
 

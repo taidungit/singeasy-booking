@@ -24,7 +24,7 @@ const RoomCard = ({ room, shopId, shopName }: RoomCardProps) => {
     <div className={`flex gap-4 p-4 rounded-2xl border border-border transition-all ${room.available ? "hover:border-primary/50 hover:shadow-card" : "opacity-60"}`}>
       {/* Image */}
       <div className="w-28 h-28 sm:w-36 sm:h-28 rounded-xl overflow-hidden bg-muted flex-shrink-0">
-        <img src={room.image} alt={room.name} className="w-full h-full object-cover" />
+        <img src={room.imageUrl} alt={room.name} className="w-full h-full object-cover" />
       </div>
 
       {/* Details */}

@@ -40,14 +40,14 @@ const ShopList = () => {
       const range = PRICE_RANGES[priceRange];
       let results = await fetchShops({
         query,
-        location: location !== "all" ? location : undefined,
+        city: location !== "all" ? location : undefined,
         minRating: minRating || undefined,
         maxPrice: range.max < 9999 ? range.max : undefined,
         minPrice: range.min > 0 ? range.min : undefined,
       });
       if (sortBy === "rating") results = [...results].sort((a, b) => b.rating - a.rating);
-      if (sortBy === "price_asc") results = [...results].sort((a, b) => a.priceFrom - b.priceFrom);
-      if (sortBy === "price_desc") results = [...results].sort((a, b) => b.priceFrom - a.priceFrom);
+      if (sortBy === "price_asc") results = [...results].sort((a, b) => a.minPricePerHour - b.minPricePerHour);
+      if (sortBy === "price_desc") results = [...results].sort((a, b) => b.minPricePerHour - a.minPricePerHour);
       setShops(results);
     } finally {
       setIsLoading(false);

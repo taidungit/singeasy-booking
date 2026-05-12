@@ -13,7 +13,7 @@ const ShopCard = ({ shop, variant = "default" }: ShopCardProps) => {
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-muted">
         <img
-          src={shop.image}
+          src={shop.imageUrl}
           alt={shop.name}
           loading="lazy"
           className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]"
@@ -25,7 +25,7 @@ const ShopCard = ({ shop, variant = "default" }: ShopCardProps) => {
         </div>
         {/* Tags */}
         <div className="absolute bottom-3 left-3 flex gap-1.5 flex-wrap">
-          {shop.tags.slice(0, 2).map((tag) => (
+          {shop.labels.slice(0, 2).map((tag) => (
             <span key={tag} className="bg-background/90 backdrop-blur-sm text-foreground text-[10px] font-semibold px-2 py-0.5 rounded-full">
               {tag}
             </span>
@@ -40,13 +40,13 @@ const ShopCard = ({ shop, variant = "default" }: ShopCardProps) => {
             <h3 className="font-semibold text-foreground leading-tight truncate">{shop.name}</h3>
             <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
               <MapPin className="w-3 h-3 flex-shrink-0" />
-              {shop.location}
+              {shop.city}
             </p>
           </div>
           <div className="text-right flex-shrink-0">
             <p className="text-sm text-muted-foreground">from</p>
             <p className="font-semibold text-foreground">
-              ${shop.priceFrom}<span className="text-xs font-normal text-muted-foreground">/hr</span>
+              ${shop.minPricePerHour}<span className="text-xs font-normal text-muted-foreground">/hr</span>
             </p>
           </div>
         </div>

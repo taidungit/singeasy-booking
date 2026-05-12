@@ -8,8 +8,10 @@ const Login = () => {
   const { state, login, clearError } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [email, setEmail] = useState("demo@echo.com");
-  const [password, setPassword] = useState("password");
+  
+  // 1. Xóa email/password mặc định của bản demo cũ
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const redirect = searchParams.get("redirect") ?? "/dashboard";
@@ -24,30 +26,28 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // 2. Gọi hàm login từ AuthContext (hàm này đã được chúng ta sửa để gọi axios)
     await login(email, password);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface px-4">
+    <div className="min-h-screen flex items-center justify-center bg-surface px-4 py-10">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-6">
+            {/* Thay đổi logo từ Echo thành SingEasy (E -> S) */}
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <span className="text-primary-foreground font-bold">E</span>
+              <span className="text-primary-foreground font-bold">S</span>
             </div>
-            <span className="font-bold text-xl text-foreground">Echo</span>
+            <span className="font-bold text-xl text-foreground">SingEasy</span>
           </Link>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Welcome back</h1>
-          <p className="text-muted-foreground text-sm mt-1">Sign in to your account to continue</p>
+          <p className="text-muted-foreground text-sm mt-1">Sign in to continue booking karaoke rooms</p>
         </div>
 
         <div className="bg-background rounded-2xl card-shadow p-8">
-          {/* Demo hint */}
-          <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 mb-6 text-sm text-muted-foreground">
-            <strong className="text-foreground">Demo credentials:</strong> demo@echo.com / password
-          </div>
-
+          {/* 3. Xóa phần "Demo credentials" vì giờ chúng ta dùng database thật */}
+          
           {state.error && (
             <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-3 mb-4">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -57,14 +57,14 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="field-label">Email address</label>
+              <label className="field-label">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full text-sm border border-border rounded-xl px-3 py-3 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-foreground"
-                placeholder="you@example.com"
+                placeholder="example@gmail.com"
               />
             </div>
             <div>
@@ -96,7 +96,7 @@ const Login = () => {
               {state.isLoading ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> Signing in...</>
               ) : (
-                "Sign in"
+                "Sign In"
               )}
             </Button>
           </form>
@@ -104,7 +104,7 @@ const Login = () => {
           <p className="text-center text-sm text-muted-foreground mt-6">
             Don't have an account?{" "}
             <Link to="/register" className="text-primary font-semibold hover:underline">
-              Create one
+              Register now
             </Link>
           </p>
         </div>

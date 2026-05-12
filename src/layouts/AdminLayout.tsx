@@ -19,8 +19,9 @@ const AdminLayout = () => {
 
   const menuItems = [
     { name: 'Dashboard', path: '/admin', icon: <LayoutDashboard size={20} /> },
-    { name: 'Quản lý Karaoke', path: '/admin/shops', icon: <Store size={20} /> },
-    { name: 'Quản lý Người dùng', path: '/admin/users', icon: <Users size={20} /> },
+    { name: 'Shop Management', path: '/admin/shops', icon: <Store size={20} /> },
+    { name: 'User Management', path: '/admin/users', icon: <Users size={20} /> },
+    // { name: 'Booking Management', path: '/admin/bookings', icon: <Settings size={20} /> },
   ];
 
   return (
@@ -65,7 +66,7 @@ const AdminLayout = () => {
             className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 font-medium"
           >
             <LogOut size={20} />
-            <span>Đăng xuất</span>
+            <span>Logout</span>
           </button>
         </div>
       </aside>
@@ -75,7 +76,7 @@ const AdminLayout = () => {
         {/* Top Header */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm">
           <div className="text-sm text-slate-500 font-medium">
-            Trang quản trị &nbsp; / &nbsp; 
+            Administration Page &nbsp; / &nbsp; 
             <span className="text-slate-900 capitalize">
               {location.pathname.split('/').pop() || 'Dashboard'}
             </span>

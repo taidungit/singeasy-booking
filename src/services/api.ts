@@ -14,15 +14,16 @@ export interface Shop {
   id: string;
   name: string;
   address: string;
-  location: string;
+  city: string;
   rating: number;
   reviewCount: number;
-  priceFrom: number;
-  image: string;
-  tags: string[];
+  minPricePerHour: number;
+  imageUrl: string;
+  labels: string[];
+  amenities: string[];
   description: string;
-  openHours: string;
-  phone: string;
+  openingHours: string;
+  phoneNumber: string;
 }
 
 export interface Room {
@@ -31,9 +32,10 @@ export interface Room {
   name: string;
   capacity: string;
   pricePerHour: number;
-  image: string;
+  imageUrl: string;
   available: boolean;
   amenities: string[];
+  status?: "AVAILABLE" | "BOOKED" | "OCCUPIED";
 }
 
 export interface Booking {
@@ -67,103 +69,109 @@ const SHOPS: Shop[] = [
     id: "1",
     name: "Echo Shibuya",
     address: "2-3-1 Dogenzaka, Shibuya City, Tokyo",
-    location: "Tokyo",
+    city: "Tokyo",
     rating: 4.9,
     reviewCount: 248,
-    priceFrom: 25,
-    image: shop1Img,
-    tags: ["Premium", "VIP Rooms", "Bar Service"],
+    minPricePerHour: 25,
+    imageUrl: shop1Img,
+    labels: ["Premium", "VIP Rooms", "Bar Service"],
     description:
       "Tokyo's most acclaimed karaoke destination. Eight meticulously designed private rooms with state-of-the-art acoustics, a curated cocktail bar, and song libraries spanning 80,000+ titles.",
-    openHours: "Mon–Sun: 12:00 PM – 5:00 AM",
-    phone: "+81 3-1234-5678",
+    openingHours: "Mon–Sun: 12:00 PM – 5:00 AM",
+    phoneNumber: "+81 3-1234-5678",
+    amenities: ["Wifi", "Điều hòa", "Bãi đỗ xe", "Thang máy", "Dàn âm thanh JBL", "Phòng VIP", "Máy chiếu", "Phục vụ đồ ăn"],
   },
   {
     id: "2",
     name: "Melody House",
     address: "15 Orchard Road, Singapore",
-    location: "Singapore",
+    city: "Singapore",
     rating: 4.7,
     reviewCount: 182,
-    priceFrom: 18,
-    image: shop2Img,
-    tags: ["Family-Friendly", "Snack Menu", "HD Screens"],
+    minPricePerHour: 18,
+    imageUrl: shop2Img,
+    labels: ["Family-Friendly", "Snack Menu", "HD Screens"],
     description:
       "A welcoming karaoke venue in the heart of Orchard, perfect for families and groups. Spacious rooms with modern equipment and a wide selection of Asian and Western hits.",
-    openHours: "Mon–Sun: 11:00 AM – 2:00 AM",
-    phone: "+65 6234-5678",
+    openingHours: "Mon–Sun: 11:00 AM – 2:00 AM",
+    phoneNumber: "+65 6234-5678",
+    amenities: ["Wifi", "Điều hòa", "Bãi đỗ xe", "Thang máy", "Dàn âm thanh JBL", "Phòng VIP", "Máy chiếu", "Phục vụ đồ ăn"],
   },
   {
     id: "3",
     name: "Noir Sessions",
     address: "88 Itaewon-ro, Yongsan-gu, Seoul",
-    location: "Seoul",
+    city: "Seoul",
     rating: 4.8,
     reviewCount: 311,
-    priceFrom: 30,
-    image: shop3Img,
-    tags: ["Luxury", "Late Night", "K-Pop Specials"],
+    minPricePerHour: 30,
+    imageUrl: shop3Img,
+    labels: ["Luxury", "Late Night", "K-Pop Specials"],
     description:
       "Seoul's most sophisticated late-night karaoke lounge. Dark, atmospheric interiors with premium sound systems, a curated spirits menu, and exclusive K-Pop performance packages.",
-    openHours: "Wed–Sun: 6:00 PM – 6:00 AM",
-    phone: "+82 2-3456-7890",
+    openingHours: "Wed–Sun: 6:00 PM – 6:00 AM",
+    phoneNumber: "+82 2-3456-7890",
+    amenities: ["Wifi", "Điều hòa", "Bãi đỗ xe", "Thang máy", "Dàn âm thanh JBL", "Phòng VIP", "Máy chiếu", "Phục vụ đồ ăn"],
   },
   {
     id: "4",
     name: "Studio Serenade",
     address: "45 Queen St, Melbourne VIC 3000",
-    location: "Melbourne",
+    city: "Melbourne",
     rating: 4.6,
     reviewCount: 134,
-    priceFrom: 22,
-    image: shop1Img,
-    tags: ["Rooftop", "All-Inclusive", "Birthday Packages"],
+    minPricePerHour: 22,
+    imageUrl: shop1Img,
+    labels: ["Rooftop", "All-Inclusive", "Birthday Packages"],
     description:
       "Melbourne's hidden gem for karaoke enthusiasts. Rooftop terrace access, all-inclusive snack packages, and dedicated birthday celebration setups available.",
-    openHours: "Tue–Sun: 5:00 PM – 1:00 AM",
-    phone: "+61 3-9012-3456",
+    openingHours: "Tue–Sun: 5:00 PM – 1:00 AM",
+    phoneNumber: "+61 3-9012-3456",
+    amenities: ["Wifi", "Điều hòa", "Bãi đỗ xe", "Thang máy", "Dàn âm thanh JBL", "Phòng VIP", "Máy chiếu", "Phục vụ đồ ăn"],
   },
   {
     id: "5",
     name: "Vocal Vault",
     address: "321 Sukhumvit Rd, Bangkok",
-    location: "Bangkok",
+    city: "Bangkok",
     rating: 4.5,
     reviewCount: 97,
-    priceFrom: 15,
-    image: shop2Img,
-    tags: ["Budget Friendly", "Group Deals", "Thai Songs"],
+    minPricePerHour: 15,
+    imageUrl: shop2Img,
+    labels: ["Budget Friendly", "Group Deals", "Thai Songs"],
     description:
       "The best value karaoke experience in Bangkok. Bright, clean rooms with a vast selection of Thai, English, Chinese, and Japanese songs. Perfect for large groups.",
-    openHours: "Mon–Sun: 10:00 AM – 3:00 AM",
-    phone: "+66 2-123-4567",
+    openingHours: "Mon–Sun: 10:00 AM – 3:00 AM",
+    phoneNumber: "+66 2-123-4567",
+    amenities: ["Wifi", "Điều hòa", "Bãi đỗ xe", "Thang máy", "Dàn âm thanh JBL", "Phòng VIP", "Máy chiếu", "Phục vụ đồ ăn"],
   },
   {
     id: "6",
     name: "Amplify NYC",
     address: "240 W 36th St, New York, NY",
-    location: "New York",
+    city: "New York",
     rating: 4.7,
     reviewCount: 204,
-    priceFrom: 35,
-    image: shop3Img,
-    tags: ["Cocktail Bar", "Hip-Hop", "Corporate Events"],
+    minPricePerHour: 35,
+    imageUrl: shop3Img,
+    labels: ["Cocktail Bar", "Hip-Hop", "Corporate Events"],
     description:
       "Midtown Manhattan's premier private karaoke venue. Twelve private rooms, a full cocktail bar, and a song catalogue of 100,000+ tracks spanning every genre.",
-    openHours: "Mon–Sun: 5:00 PM – 4:00 AM",
-    phone: "+1 212-345-6789",
+    openingHours: "Mon–Sun: 5:00 PM – 4:00 AM",
+    phoneNumber: "+1 212-345-6789",
+    amenities: ["Wifi", "Điều hòa", "Bãi đỗ xe", "Thang máy", "Dàn âm thanh JBL", "Phòng VIP", "Máy chiếu", "Phục vụ đồ ăn"],
   },
 ];
 
 const ROOMS: Room[] = [
-  { id: "r1", shopId: "1", name: "Sapphire Suite", capacity: "2–4", pricePerHour: 25, image: roomBlueImg, available: true, amenities: ["HD Screen", "Premium Sound", "iPad Controller", "Snack Menu"] },
-  { id: "r2", shopId: "1", name: "Gold VIP Hall", capacity: "8–15", pricePerHour: 80, image: roomVipImg, available: true, amenities: ["4K Projector", "Pro Sound System", "Bar Service", "Dedicated Host", "Food Menu"] },
-  { id: "r3", shopId: "1", name: "Rose Studio", capacity: "2–3", pricePerHour: 20, image: roomCozyImg, available: false, amenities: ["Smart TV", "Wireless Mic", "Snack Menu"] },
-  { id: "r4", shopId: "1", name: "Teal Chamber", capacity: "4–8", pricePerHour: 45, image: roomGallery1Img, available: true, amenities: ["HD Screen", "Surround Sound", "iPad Controller", "Snack Menu"] },
-  { id: "r5", shopId: "2", name: "Indigo Room", capacity: "2–4", pricePerHour: 18, image: roomBlueImg, available: true, amenities: ["HD Screen", "Wireless Mic", "Snack Menu"] },
-  { id: "r6", shopId: "2", name: "Grand Hall", capacity: "10–20", pricePerHour: 70, image: roomVipImg, available: true, amenities: ["Projector", "Pro Sound", "Buffet Service"] },
-  { id: "r7", shopId: "3", name: "Midnight Suite", capacity: "4–6", pricePerHour: 35, image: roomGallery1Img, available: true, amenities: ["OLED Display", "Premium Sound", "Cocktail Service"] },
-  { id: "r8", shopId: "3", name: "Noir VIP", capacity: "8–12", pricePerHour: 95, image: roomVipImg, available: true, amenities: ["4K Projector", "Dolby Sound", "Private Bar", "Butler Service"] },
+  { id: "r1", shopId: "1", name: "Sapphire Suite", capacity: "2–4", pricePerHour: 25, imageUrl: roomBlueImg, available: true, amenities: ["HD Screen", "Premium Sound", "iPad Controller", "Snack Menu"] },
+  { id: "r2", shopId: "1", name: "Gold VIP Hall", capacity: "8–15", pricePerHour: 80, imageUrl: roomVipImg, available: true, amenities: ["4K Projector", "Pro Sound System", "Bar Service", "Dedicated Host", "Food Menu"] },
+  { id: "r3", shopId: "1", name: "Rose Studio", capacity: "2–3", pricePerHour: 20, imageUrl: roomCozyImg, available: false, amenities: ["Smart TV", "Wireless Mic", "Snack Menu"] },
+  { id: "r4", shopId: "1", name: "Teal Chamber", capacity: "4–8", pricePerHour: 45, imageUrl: roomGallery1Img, available: true, amenities: ["HD Screen", "Surround Sound", "iPad Controller", "Snack Menu"] },
+  { id: "r5", shopId: "2", name: "Indigo Room", capacity: "2–4", pricePerHour: 18, imageUrl: roomBlueImg, available: true, amenities: ["HD Screen", "Wireless Mic", "Snack Menu"] },
+  { id: "r6", shopId: "2", name: "Grand Hall", capacity: "10–20", pricePerHour: 70, imageUrl: roomVipImg, available: true, amenities: ["Projector", "Pro Sound", "Buffet Service"] },
+  { id: "r7", shopId: "3", name: "Midnight Suite", capacity: "4–6", pricePerHour: 35, imageUrl: roomGallery1Img, available: true, amenities: ["OLED Display", "Premium Sound", "Cocktail Service"] },
+  { id: "r8", shopId: "3", name: "Noir VIP", capacity: "8–12", pricePerHour: 95, imageUrl: roomVipImg, available: true, amenities: ["4K Projector", "Dolby Sound", "Private Bar", "Butler Service"] },
 ];
 
 const BOOKINGS: Booking[] = [
@@ -185,7 +193,7 @@ const REVIEWS: Review[] = [
 
 export const fetchShops = async (params?: {
   query?: string;
-  location?: string;
+  city?: string;
   minPrice?: number;
   maxPrice?: number;
   minRating?: number;
@@ -196,14 +204,14 @@ export const fetchShops = async (params?: {
   if (params?.query) {
     const q = params.query.toLowerCase();
     results = results.filter(
-      (s) => s.name.toLowerCase().includes(q) || s.location.toLowerCase().includes(q) || s.address.toLowerCase().includes(q)
+      (s) => s.name.toLowerCase().includes(q) || s.city.toLowerCase().includes(q) || s.address.toLowerCase().includes(q)
     );
   }
-  if (params?.location && params.location !== "all") {
-    results = results.filter((s) => s.location.toLowerCase().includes(params.location!.toLowerCase()));
+  if (params?.city && params.city !== "all") {
+    results = results.filter((s) => s.city.toLowerCase().includes(params.city!.toLowerCase()));
   }
-  if (params?.minPrice) results = results.filter((s) => s.priceFrom >= params.minPrice!);
-  if (params?.maxPrice) results = results.filter((s) => s.priceFrom <= params.maxPrice!);
+  if (params?.minPrice) results = results.filter((s) => s.minPricePerHour >= params.minPrice!);
+  if (params?.maxPrice) results = results.filter((s) => s.minPricePerHour <= params.maxPrice!);
   if (params?.minRating) results = results.filter((s) => s.rating >= params.minRating!);
   return results;
 };
