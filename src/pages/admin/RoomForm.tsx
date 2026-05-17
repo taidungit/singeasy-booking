@@ -211,7 +211,6 @@ const handleSubmit = async (e: React.FormEvent) => {
                     onChange={e => setFormData({...formData, status: e.target.value})}
                   >
                     <option value="AVAILABLE">Available</option>
-                    <option value="OCCUPIED">Occupied</option>
                     <option value="BOOKED">Booked</option>
                   </select>
                 </div>

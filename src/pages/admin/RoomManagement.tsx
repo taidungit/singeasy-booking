@@ -28,10 +28,6 @@ const statusConfig = {
     label: "Booked",
     className: "bg-orange-100 text-orange-700",
   },
-  OCCUPIED: {
-    label: "Occupied",
-    className: "bg-red-100 text-red-700",
-  },
 };
 
 const RoomManagement = () => {

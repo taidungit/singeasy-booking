@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom"; // 🌟 Đã đổi Link thành NavLink cho các nút điều hướng
 import { Menu, X, LogOut, LayoutDashboard, History, PhoneCall } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,22 @@ const Navbar = () => {
   const scrollTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  // 🌟 Hàm helper định nghĩa style Active cho Desktop (Chữ đậm màu đen + Hiện thanh gạch chân màu xanh)
+  const desktopLinkStyle = ({ isActive }: { isActive: boolean }) =>
+    `text-sm font-bold transition-all relative py-1 flex items-center gap-1.5 ${
+      isActive
+        ? "text-slate-900 after:absolute after:bottom-[-20px] after:left-0 after:w-full after:h-[2.5px] after:bg-blue-600"
+        : "text-muted-foreground hover:text-slate-900 after:absolute after:bottom-[-20px] after:left-0 after:w-0 after:h-[2.5px] after:bg-blue-600 hover:after:w-full after:transition-all"
+    }`;
+
+  // 🌟 Hàm helper định nghĩa style Active cho Mobile (Đổi nền và màu chữ khi được chọn)
+  const mobileLinkStyle = ({ isActive }: { isActive: boolean }) =>
+    `block px-3 py-2 rounded-xl text-sm font-bold transition-colors ${
+      isActive
+        ? "bg-blue-50 text-blue-600"
+        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+    }`;
 
   return (
     <nav className="sticky top-0 z-50 bg-background/90 backdrop-blur border-b border-border shadow-sm">
@@ -42,30 +58,30 @@ const Navbar = () => {
             </span>
           </Link>
 
-          {/* Desktop Nav - Thêm menu giúp thanh điều hướng đầy đặn, chuyên nghiệp hơn */}
-          <div className="hidden md:flex items-center gap-10">
-            <Link
+          {/* Desktop Nav - Tự động nhận diện trang hiện tại bằng NavLink */}
+          <div className="hidden md:flex items-center gap-8">
+            <NavLink
               to="/shops"
-              className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors relative after:absolute after:bottom-[-20px] after:left-0 after:w-0 after:h-[2px] after:bg-primary hover:after:w-full after:transition-all"
+              className={desktopLinkStyle}
             >
               Browse Shops
-            </Link>
+            </NavLink>
 
             {state.isAuthenticated && (
-              <Link
+              <NavLink
                 to="/dashboard" 
-                className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+                className={desktopLinkStyle}
               >
                 <History className="w-4 h-4" /> My Bookings
-              </Link>
+              </NavLink>
             )}
 
-            <Link
+            <NavLink
               to="/contact"
-              className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+              className={desktopLinkStyle}
             >
               <PhoneCall className="w-4 h-4" /> Contact
-            </Link>
+            </NavLink>
           </div>
 
           {/* Auth */}
@@ -75,18 +91,18 @@ const Navbar = () => {
             {state.isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 rounded-xl border-slate-200 hover:bg-slate-50 font-medium">
+                  <Button variant="outline" size="sm" className="gap-2 rounded-xl border-slate-200 hover:bg-slate-50 font-semibold shadow-sm">
                     <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center shadow-sm">
                       <span className="text-white text-xs font-bold uppercase">
                         {state.user?.name.charAt(0)}
                       </span>
                     </div>
-                    {state.user?.name.split(" ")[0]}
+                    {state.user?.name ? state.user.name.split(" ")[0] : "User"}
                   </Button>
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-md mt-1">
-                  <DropdownMenuItem onClick={() => navigate("/dashboard")} className="cursor-pointer py-2">
+                  <DropdownMenuItem onClick={() => navigate("/dashboard")} className="cursor-pointer py-2 font-medium">
                     <LayoutDashboard className="w-4 h-4 mr-2 text-slate-500" />
                     Dashboard
                   </DropdownMenuItem>
@@ -95,7 +111,7 @@ const Navbar = () => {
 
                   <DropdownMenuItem
                     onClick={logout}
-                    className="text-destructive cursor-pointer py-2 focus:bg-destructive/5"
+                    className="text-destructive cursor-pointer py-2 focus:bg-destructive/5 font-medium"
                   >
                     <LogOut className="w-4 h-4 mr-2" />
                     Log out
@@ -103,11 +119,11 @@ const Navbar = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <>
+              <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="font-medium text-muted-foreground rounded-xl"
+                  className="font-semibold text-muted-foreground rounded-xl"
                   onClick={() => navigate("/login")}
                 >
                   Log in
@@ -120,7 +136,7 @@ const Navbar = () => {
                 >
                   Sign up
                 </Button>
-              </>
+              </div>
             )}
           </div>
 
@@ -134,34 +150,34 @@ const Navbar = () => {
 
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - Đã tích hợp Active State đổi màu nền */}
         {isOpen && (
           <div className="md:hidden py-4 border-t border-border space-y-1 animate-fade-in">
-            <Link
+            <NavLink
               to="/shops"
               onClick={() => setIsOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className={mobileLinkStyle}
             >
               Browse Shops
-            </Link>
+            </NavLink>
 
             {state.isAuthenticated && (
-              <Link
+              <NavLink
                 to="/dashboard"
                 onClick={() => setIsOpen(false)}
-                className="block px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                className={mobileLinkStyle}
               >
                 My Bookings
-              </Link>
+              </NavLink>
             )}
 
-            <Link
+            <NavLink
               to="/contact"
               onClick={() => setIsOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className={mobileLinkStyle}
             >
               Contact
-            </Link>
+            </NavLink>
 
             <div className="h-px bg-border my-2" />
 
@@ -170,7 +186,7 @@ const Navbar = () => {
                 <Link
                   to="/dashboard"
                   onClick={() => setIsOpen(false)}
-                  className="block px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  className="block px-3 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                 >
                   <LayoutDashboard className="inline w-4 h-4 mr-2" />
                   Dashboard
@@ -181,7 +197,7 @@ const Navbar = () => {
                     logout();
                     setIsOpen(false);
                   }}
-                  className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+                  className="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-destructive hover:bg-destructive/10 transition-colors"
                 >
                   <LogOut className="inline w-4 h-4 mr-2" />
                   Log out
@@ -192,7 +208,7 @@ const Navbar = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1 rounded-xl"
+                  className="flex-1 rounded-xl font-semibold"
                   onClick={() => {
                     navigate("/login");
                     setIsOpen(false);
@@ -203,7 +219,7 @@ const Navbar = () => {
 
                 <Button
                   size="sm"
-                  className="flex-1 rounded-xl"
+                  className="flex-1 rounded-xl font-semibold bg-blue-600 text-white hover:bg-blue-700"
                   onClick={() => {
                     navigate("/register");
                     setIsOpen(false);
