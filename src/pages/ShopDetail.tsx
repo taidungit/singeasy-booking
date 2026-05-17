@@ -12,6 +12,7 @@ import roomBlueImg from "@/assets/room-blue.jpg";
 import roomVipImg from "@/assets/room-vip.jpg";
 import roomCozyImg from "@/assets/room-cozy.jpg";
 import roomGallery1Img from "@/assets/room-gallery-1.jpg";
+import axiosClient from "@/services/axiosClient";
 
 const GALLERY_IMGS = [roomBlueImg, roomVipImg, roomCozyImg, roomGallery1Img];
 
@@ -24,19 +25,28 @@ const ShopDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"rooms" | "reviews">("rooms");
 
-  useEffect(() => {
-    if (!id) return;
-    Promise.all([
-      fetchShopById(id),
-      fetchRoomsByShop(id),
-      fetchReviews(id),
-    ]).then(([shopData, roomsData, reviewsData]) => {
-      setShop(shopData);
-      setRooms(roomsData);
-      setReviews(reviewsData);
-    }).finally(() => setIsLoading(false));
-  }, [id]);
+useEffect(() => {
+    const loadData = async () => {
+      if (!id) return;
+      try {
+        setIsLoading(true);
+        // Chạy song song API Shop và Rooms từ Backend
+        const [shopRes, roomsRes] = await Promise.all([
+          axiosClient.get<Shop>(`/shops/${id}`),
+          axiosClient.get<Room[]>(`/shops/${id}/rooms`),
+        ]);
 
+        setShop(shopRes.data);
+        setRooms(Array.isArray(roomsRes.data) ? roomsRes.data : []);
+      } catch (error) {
+        console.error("Error fetching shop details:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [id]);
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -46,7 +56,6 @@ const ShopDetail = () => {
       </div>
     );
   }
-
   if (!shop) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center">
@@ -220,30 +229,29 @@ const ShopDetail = () => {
   </div>
 
   {/* Amenities */}
-  <div className="border-t border-border pt-5">
+<div className="border-t border-border pt-5">
+  <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+    Amenities
+  </p>
 
-    <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-      Amenities
-    </p>
-
-    <div className="flex flex-wrap gap-2">
-      <span className="text-xs bg-muted px-2 py-1 rounded-full">
-        Private rooms
-      </span>
-      <span className="text-xs bg-muted px-2 py-1 rounded-full">
-        Wireless microphones
-      </span>
-      <span className="text-xs bg-muted px-2 py-1 rounded-full">
-        HD screens
-      </span>
-      <span className="text-xs bg-muted px-2 py-1 rounded-full">
-        Food service
-      </span>
-      <span className="text-xs bg-muted px-2 py-1 rounded-full">
-        Air conditioning
-      </span>
-    </div>
+  <div className="flex flex-wrap gap-2">
+    {/* Kiểm tra nếu shop có mảng amenities thì render, nếu không hiển thị thông báo hoặc mảng mặc định */}
+    {shop.amenities && shop.amenities.length > 0 ? (
+      shop.amenities.map((amenity, index) => (
+        <span key={index} className="text-xs bg-muted px-2 py-1 rounded-full">
+          {amenity}
+        </span>
+      ))
+    ) : (
+      /* Fallback nếu database chưa có dữ liệu cho shop này */
+      ["Private rooms", "Air conditioning"].map((item) => (
+        <span key={item} className="text-xs bg-muted px-2 py-1 rounded-full">
+          {item}
+        </span>
+      ))
+    )}
   </div>
+</div>
 
 </div>
             </div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, X, LogOut, LayoutDashboard, History, PhoneCall } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/royal-logo.avif";
@@ -22,83 +22,72 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-background/90 backdrop-blur border-b border-border">
+    <nav className="sticky top-0 z-50 bg-background/90 backdrop-blur border-b border-border shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
           <Link
             to="/"
             onClick={scrollTop}
-            className="flex items-center gap-3 group"
+            className="flex items-center gap-3 group shrink-0"
           >
-          <img 
-            src={logo} 
-            alt="Royal Logo"
-            className="w-14 h-14 object-cover rounded-lg"
-          />
-
+            <img 
+              src={logo} 
+              alt="Royal Logo"
+              className="w-11 h-11 object-cover rounded-xl transition-transform group-hover:scale-105"
+            />
             <span className="font-bold text-lg tracking-tight text-foreground">
               Royal
             </span>
           </Link>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
+          {/* Desktop Nav - Thêm menu giúp thanh điều hướng đầy đặn, chuyên nghiệp hơn */}
+          <div className="hidden md:flex items-center gap-10">
             <Link
               to="/shops"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors relative after:absolute after:bottom-[-20px] after:left-0 after:w-0 after:h-[2px] after:bg-primary hover:after:w-full after:transition-all"
             >
               Browse Shops
             </Link>
 
-            <Link
-              to="/shops?location=Tokyo"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Tokyo
-            </Link>
+            {state.isAuthenticated && (
+              <Link
+                to="/dashboard" 
+                className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+              >
+                <History className="w-4 h-4" /> My Bookings
+              </Link>
+            )}
 
             <Link
-              to="/shops?location=Seoul"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              to="/contact"
+              className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
             >
-              Seoul
-            </Link>
-
-            <Link
-              to="/shops?location=Singapore"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Singapore
+              <PhoneCall className="w-4 h-4" /> Contact
             </Link>
           </div>
 
           {/* Auth */}
-          <div className="hidden md:flex items-center gap-4">
-
+          <div className="hidden md:flex items-center gap-4 shrink-0">
             <div className="h-6 w-px bg-border"></div>
 
             {state.isAuthenticated ? (
               <DropdownMenu>
-
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                      <span className="text-primary-foreground text-xs font-bold">
+                  <Button variant="outline" size="sm" className="gap-2 rounded-xl border-slate-200 hover:bg-slate-50 font-medium">
+                    <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center shadow-sm">
+                      <span className="text-white text-xs font-bold uppercase">
                         {state.user?.name.charAt(0)}
                       </span>
                     </div>
-
                     {state.user?.name.split(" ")[0]}
                   </Button>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent align="end" className="w-48">
-
-                  <DropdownMenuItem onClick={() => navigate("/dashboard")}>
-                    <LayoutDashboard className="w-4 h-4 mr-2" />
+                <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-md mt-1">
+                  <DropdownMenuItem onClick={() => navigate("/dashboard")} className="cursor-pointer py-2">
+                    <LayoutDashboard className="w-4 h-4 mr-2 text-slate-500" />
                     Dashboard
                   </DropdownMenuItem>
 
@@ -106,12 +95,11 @@ const Navbar = () => {
 
                   <DropdownMenuItem
                     onClick={logout}
-                    className="text-destructive"
+                    className="text-destructive cursor-pointer py-2 focus:bg-destructive/5"
                   >
                     <LogOut className="w-4 h-4 mr-2" />
                     Log out
                   </DropdownMenuItem>
-
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
@@ -119,6 +107,7 @@ const Navbar = () => {
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="font-medium text-muted-foreground rounded-xl"
                   onClick={() => navigate("/login")}
                 >
                   Log in
@@ -126,7 +115,7 @@ const Navbar = () => {
 
                 <Button
                   size="sm"
-                  className="rounded-full px-5 shadow-sm hover:shadow-md transition-shadow"
+                  className="rounded-xl px-5 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm transition-all"
                   onClick={() => navigate("/register")}
                 >
                   Sign up
@@ -148,7 +137,6 @@ const Navbar = () => {
         {/* Mobile Menu */}
         {isOpen && (
           <div className="md:hidden py-4 border-t border-border space-y-1 animate-fade-in">
-
             <Link
               to="/shops"
               onClick={() => setIsOpen(false)}
@@ -157,28 +145,22 @@ const Navbar = () => {
               Browse Shops
             </Link>
 
-            <Link
-              to="/shops?location=Tokyo"
-              onClick={() => setIsOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              Tokyo
-            </Link>
+            {state.isAuthenticated && (
+              <Link
+                to="/dashboard"
+                onClick={() => setIsOpen(false)}
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                My Bookings
+              </Link>
+            )}
 
             <Link
-              to="/shops?location=Seoul"
+              to="/contact"
               onClick={() => setIsOpen(false)}
               className="block px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
-              Seoul
-            </Link>
-
-            <Link
-              to="/shops?location=Singapore"
-              onClick={() => setIsOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              Singapore
+              Contact
             </Link>
 
             <div className="h-px bg-border my-2" />
@@ -210,7 +192,7 @@ const Navbar = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1"
+                  className="flex-1 rounded-xl"
                   onClick={() => {
                     navigate("/login");
                     setIsOpen(false);
@@ -221,7 +203,7 @@ const Navbar = () => {
 
                 <Button
                   size="sm"
-                  className="flex-1"
+                  className="flex-1 rounded-xl"
                   onClick={() => {
                     navigate("/register");
                     setIsOpen(false);

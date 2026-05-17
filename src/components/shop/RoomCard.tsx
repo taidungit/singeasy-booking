@@ -10,18 +10,32 @@ interface RoomCardProps {
   shopName: string;
 }
 
+interface Amenity {
+  id?: number | string;
+  name: string;
+}
+
 const RoomCard = ({ room, shopId, shopName }: RoomCardProps) => {
   const { dispatch } = useBooking();
   const navigate = useNavigate();
 
+  // 1. Xác định biến trạng thái để tránh dùng room.available cũ gây mờ (opacity-60)
+  const isAvailable = room.status === "AVAILABLE";
+
   const handleBook = () => {
     dispatch({ type: "SET_ROOM", payload: room });
     dispatch({ type: "SET_SHOP", payload: { shopId, shopName } });
-    navigate("/booking");
+    navigate(`/booking?shopId=${shopId}&roomId=${room.id}`);
   };
 
   return (
-    <div className={`flex gap-4 p-4 rounded-2xl border border-border transition-all ${room.available ? "hover:border-primary/50 hover:shadow-card" : "opacity-60"}`}>
+    <div 
+      className={`flex gap-4 p-4 rounded-2xl border border-border transition-all ${
+        isAvailable 
+          ? "hover:border-primary/50 hover:shadow-card" 
+          : "opacity-60 bg-muted/30" // Chỉ mờ khi status KHÔNG PHẢI là AVAILABLE
+      }`}
+    >
       {/* Image */}
       <div className="w-28 h-28 sm:w-36 sm:h-28 rounded-xl overflow-hidden bg-muted flex-shrink-0">
         <img src={room.imageUrl} alt={room.name} className="w-full h-full object-cover" />
@@ -38,19 +52,29 @@ const RoomCard = ({ room, shopId, shopName }: RoomCardProps) => {
             </div>
           </div>
           <div className="text-right flex-shrink-0">
-            <p className="text-xl font-bold text-foreground">${room.pricePerHour}</p>
+            <p className="text-xl font-bold text-foreground">
+              {/* Nếu dùng VNĐ bạn nên .toLocaleString() để dễ nhìn */}
+              ${room.pricePerHour}
+            </p>
             <p className="text-xs text-muted-foreground">per hour</p>
           </div>
         </div>
 
-        {/* Amenities */}
+        {/* Amenities - FIX LỖI HIỂN THỊ TRONG HÌNH image_74107c.png */}
         <div className="flex flex-wrap gap-1.5 mt-2.5">
-          {room.amenities.slice(0, 3).map((a) => (
-            <span key={a} className="text-[10px] font-medium bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">
-              {a}
+          {room.amenities && room.amenities.slice(0, 3).map((a, index) => (
+            <span 
+              key={index} 
+              className="text-[10px] font-medium bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full"
+            >
+              {/* 
+                Trong hình image_74107c.png, 'a' đang là 1 Object nên nó hiện mã Java.
+                Ta cần truy cập vào thuộc tính '.name' của Object đó.
+              */}
+              {typeof a === 'object' && a !== null ? (a as Amenity).name : a}
             </span>
           ))}
-          {room.amenities.length > 3 && (
+          {room.amenities && room.amenities.length > 3 && (
             <span className="text-[10px] text-muted-foreground">+{room.amenities.length - 3} more</span>
           )}
         </div>
@@ -58,16 +82,25 @@ const RoomCard = ({ room, shopId, shopName }: RoomCardProps) => {
 
       {/* Availability + Book */}
       <div className="flex flex-col items-end justify-between gap-2 flex-shrink-0">
-        <div className={`flex items-center gap-1 text-xs font-medium ${room.available ? "text-success" : "text-destructive"}`}>
-          {room.available ? (
-            <><CheckCircle className="w-3.5 h-3.5" />Available</>
+        <div className={`flex items-center gap-1 text-xs font-medium ${
+          isAvailable ? "text-success" : "text-destructive"
+        }`}>
+          {isAvailable ? (
+            <>
+              <CheckCircle className="w-3.5 h-3.5" />
+              Available
+            </>
           ) : (
-            <><XCircle className="w-3.5 h-3.5" />Booked</>
+            <>
+              <XCircle className="w-3.5 h-3.5" />
+              Booked
+            </>
           )}
         </div>
+        
         <Button
           size="sm"
-          disabled={!room.available}
+          disabled={!isAvailable}
           onClick={handleBook}
           className="text-xs"
         >

@@ -7,7 +7,7 @@ export interface Room {
   capacity: string;
   pricePerHour: number;
   imageUrl: string;
-  available: boolean;
+  status: string
   amenities: string[];
 }
 

@@ -26,6 +26,7 @@ import UserForm from "./pages/admin/UserForm";
 import AdminShopDetail from "./pages/admin/AdminShopDetail";
 import AdminUserDetail from "./pages/admin/AdminUserDetail";
 import BookingManagement from "./pages/admin/BookingManagement";
+import Contact from "./pages/Contact";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ const App = () => (
                 <Route path="/shops/:id" element={<ShopDetail />} />
                 <Route path="/booking" element={<Booking />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/contact" element={<Contact />} />
               </Route>
 
               {/* Admin Layout */}

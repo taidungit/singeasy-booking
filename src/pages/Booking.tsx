@@ -1,22 +1,73 @@
-import { useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Calendar, Clock, Users, Music } from "lucide-react";
 import { useBooking } from "@/context/BookingContext";
 import { useAuth } from "@/context/AuthContext";
 import BookingForm from "@/components/booking/BookingForm";
 import { Button } from "@/components/ui/button";
+import axiosClient from "@/services/axiosClient";
+import { Room } from "@/services/api";
 
 const Booking = () => {
-  const { state, totalPrice } = useBooking();
+  const { state, dispatch, totalPrice } = useBooking();
   const { state: authState } = useAuth();
   const navigate = useNavigate();
+  
+  // Đọc tham số shopId và roomId từ thanh URL định danh
+  const [searchParams] = useSearchParams();
+  const shopIdFromUrl = searchParams.get("shopId");
+  const roomIdFromUrl = searchParams.get("roomId");
 
+  const [pageLoading, setPageLoading] = useState(false);
+
+  // 1. Kiểm tra trạng thái đăng nhập
   useEffect(() => {
     if (!authState.isAuthenticated) {
-      navigate("/login?redirect=/booking");
+      // Giữ nguyên trang redirect kèm query params để login xong quay lại đúng phòng
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
     }
   }, [authState.isAuthenticated, navigate]);
 
+  // 2. Xử lý phục hồi dữ liệu từ API Backend khi người dùng nhấn F5/Refresh trang
+  useEffect(() => {
+    const restoreRoomState = async () => {
+      // Nếu Context bị mất dữ liệu phòng nhưng trên URL vẫn giữ định danh ID
+      if (!state.selectedRoom && shopIdFromUrl && roomIdFromUrl) {
+        try {
+          setPageLoading(true);
+          
+          // Gọi API Backend lấy lại chi tiết thông tin Room chuẩn cấu trúc phân cấp
+          const res = await axiosClient.get<Room>(`/shops/${shopIdFromUrl}/rooms/${roomIdFromUrl}`);
+          const roomData = res.data;
+
+          if (roomData) {
+            // Đồng bộ ngược dữ liệu vừa lấy từ API đắp lại vào Context lưu trữ
+            dispatch({ type: "SET_ROOM", payload: roomData });
+            // Bạn có thể fetch thêm chi tiết Shop để lấy shopName nếu cần, tạm thời set id làm tên hiển thị
+            dispatch({ type: "SET_SHOP", payload: { shopId: shopIdFromUrl, shopName: `Shop #${shopIdFromUrl}` } });
+          }
+        } catch (error) {
+          console.error("Failed to restore booking room information:", error);
+        } finally {
+          setPageLoading(false);
+        }
+      }
+    };
+
+    restoreRoomState();
+  }, [state.selectedRoom, shopIdFromUrl, roomIdFromUrl, dispatch]);
+
+  // Hiển thị trạng thái loading khi đang kéo lại dữ liệu từ Backend
+  if (pageLoading) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+        <p className="text-muted-foreground text-sm">Restoring your booking selection...</p>
+      </div>
+    );
+  }
+
+  // Khóa giao diện an toàn nếu hoàn toàn không có ID phòng nào được chỉ định
   if (!state.selectedRoom) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-24 text-center">
@@ -50,7 +101,7 @@ const Booking = () => {
           <div className="bg-surface rounded-2xl overflow-hidden border border-border mb-6">
             <div className="aspect-[16/7] overflow-hidden">
               <img
-                src={state.selectedRoom.image}
+                src={state.selectedRoom.imageUrl}
                 alt={state.selectedRoom.name}
                 className="w-full h-full object-cover"
               />
@@ -69,12 +120,16 @@ const Booking = () => {
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-foreground mb-3">Included amenities</h3>
             <div className="flex flex-wrap gap-2">
-              {state.selectedRoom.amenities.map((a) => (
-                <span key={a} className="flex items-center gap-1.5 text-xs font-medium bg-background border border-border px-3 py-1.5 rounded-full">
-                  <Music className="w-3 h-3 text-primary" />
-                  {a}
-                </span>
-              ))}
+              {state.selectedRoom.amenities && state.selectedRoom.amenities.map((a, index) => {
+                // Đảm bảo an toàn hiển thị chuỗi text sạch nếu Backend trả về mảng Object thực thể Amenity
+                const amenityName = typeof a === 'object' && a !== null ? (a as { name: string }).name : a;
+                return (
+                  <span key={index} className="flex items-center gap-1.5 text-xs font-medium bg-background border border-border px-3 py-1.5 rounded-full">
+                    <Music className="w-3 h-3 text-primary" />
+                    {amenityName}
+                  </span>
+                );
+              })}
             </div>
           </div>
 
@@ -96,12 +151,10 @@ const Booking = () => {
             </div>
             {state.date && (
               <div className="pt-2 space-y-1.5 text-sm text-muted-foreground">
-                {state.date && (
-                  <p className="flex items-center gap-2">
-                    <Calendar className="w-3.5 h-3.5 text-primary" />
-                    {new Date(state.date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-                  </p>
-                )}
+                <p className="flex items-center gap-2">
+                  <Calendar className="w-3.5 h-3.5 text-primary" />
+                  {new Date(state.date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                </p>
                 <p className="flex items-center gap-2">
                   <Clock className="w-3.5 h-3.5 text-primary" />
                   {state.startTime} — {(parseInt(state.startTime.split(":")[0]) + state.hours).toString().padStart(2, "0")}:00

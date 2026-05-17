@@ -44,7 +44,7 @@ const RoomForm = () => {
 
         // Fetch Room Detail if in Edit mode
         if (isEdit && roomId) {
-          const res = await axiosClient.get<Room>(`/rooms/${roomId}`);
+          const res = await axiosClient.get<Room>(`/shops/${shopId}/rooms/${roomId}`);
           const roomData = (res as AxiosResponse<Room>).data;
 
           setFormData({
@@ -99,7 +99,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     };
 
     if (isEdit) {
-      await axiosClient.put(`/rooms/${roomId}`, payload);
+      await axiosClient.put(`/shops/${shopId}/rooms/${roomId}`, payload);
       toast.success("Room updated successfully!");
     } else {
       await axiosClient.post(`/shops/${shopId}/rooms`, payload); 
