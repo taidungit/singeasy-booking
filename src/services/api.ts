@@ -75,6 +75,20 @@ export interface Review {
   createdAt: string;
 }
 
+export const updateProfile = async (
+  name: string,
+  phoneNumber: string,
+  avatarBase64: string | null
+): Promise<unknown> => {
+  // Gửi JSON thông thường cực kỳ gọn nhẹ
+  const res = await axiosClient.put<unknown>("/users/profile", {
+    name,
+    phoneNumber,
+    avatar: avatarBase64
+  });
+  return res.data;
+};
+
 // ─── API FUNCTIONS ────────────────────────────────────────────────────────────
 
 export const fetchShops = async (params?: {

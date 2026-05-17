@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom"; // 🌟 Đã đổi Link thành NavLink cho các nút điều hướng
-import { Menu, X, LogOut, LayoutDashboard, History, PhoneCall } from "lucide-react";
+import { Link, NavLink, useNavigate } from "react-router-dom"; 
+import { Menu, X, LogOut, LayoutDashboard, History, PhoneCall, UserIcon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/royal-logo.avif";
@@ -21,7 +21,7 @@ const Navbar = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // 🌟 Hàm helper định nghĩa style Active cho Desktop (Chữ đậm màu đen + Hiện thanh gạch chân màu xanh)
+  // 🌟 Hàm helper định nghĩa style Active cho Desktop
   const desktopLinkStyle = ({ isActive }: { isActive: boolean }) =>
     `text-sm font-bold transition-all relative py-1 flex items-center gap-1.5 ${
       isActive
@@ -29,7 +29,7 @@ const Navbar = () => {
         : "text-muted-foreground hover:text-slate-900 after:absolute after:bottom-[-20px] after:left-0 after:w-0 after:h-[2.5px] after:bg-blue-600 hover:after:w-full after:transition-all"
     }`;
 
-  // 🌟 Hàm helper định nghĩa style Active cho Mobile (Đổi nền và màu chữ khi được chọn)
+  // 🌟 Hàm helper định nghĩa style Active cho Mobile
   const mobileLinkStyle = ({ isActive }: { isActive: boolean }) =>
     `block px-3 py-2 rounded-xl text-sm font-bold transition-colors ${
       isActive
@@ -58,28 +58,19 @@ const Navbar = () => {
             </span>
           </Link>
 
-          {/* Desktop Nav - Tự động nhận diện trang hiện tại bằng NavLink */}
+          {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
-            <NavLink
-              to="/shops"
-              className={desktopLinkStyle}
-            >
+            <NavLink to="/shops" className={desktopLinkStyle}>
               Browse Shops
             </NavLink>
 
             {state.isAuthenticated && (
-              <NavLink
-                to="/dashboard" 
-                className={desktopLinkStyle}
-              >
+              <NavLink to="/dashboard" className={desktopLinkStyle}>
                 <History className="w-4 h-4" /> My Bookings
               </NavLink>
             )}
 
-            <NavLink
-              to="/contact"
-              className={desktopLinkStyle}
-            >
+            <NavLink to="/contact" className={desktopLinkStyle}>
               <PhoneCall className="w-4 h-4" /> Contact
             </NavLink>
           </div>
@@ -91,17 +82,38 @@ const Navbar = () => {
             {state.isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 rounded-xl border-slate-200 hover:bg-slate-50 font-semibold shadow-sm">
-                    <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center shadow-sm">
-                      <span className="text-white text-xs font-bold uppercase">
-                        {state.user?.name.charAt(0)}
-                      </span>
+                  <Button variant="outline" size="sm" className="gap-2 rounded-xl border-slate-200 hover:bg-slate-50 font-semibold shadow-sm py-5">
+                    
+                    {/* 🌟 ĐÃ SỬA: Khối hiển thị Avatar thông minh nhận diện Base64 */}
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center shadow-sm overflow-hidden bg-amber-500 shrink-0">
+                      {state.user?.avatar ? (
+                        <img 
+                          src={state.user.avatar} 
+                          alt="User Avatar" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-white text-xs font-black uppercase">
+                          {state.user?.name ? state.user.name.charAt(0) : "U"}
+                        </span>
+                      )}
                     </div>
-                    {state.user?.name ? state.user.name.split(" ")[0] : "User"}
+
+                    <span className="text-slate-700 font-bold text-sm">
+                      {state.user?.name ? state.user.name.split(" ")[0] : "User"}
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-md mt-1">
+                  <DropdownMenuItem 
+                    onClick={() => navigate("/profile")} 
+                    className="cursor-pointer py-2 font-medium"
+                  >
+                    <UserIcon className="w-4 h-4 mr-2 text-slate-500" /> 
+                    My Profile
+                  </DropdownMenuItem>
+                  
                   <DropdownMenuItem onClick={() => navigate("/dashboard")} className="cursor-pointer py-2 font-medium">
                     <LayoutDashboard className="w-4 h-4 mr-2 text-slate-500" />
                     Dashboard
@@ -150,7 +162,7 @@ const Navbar = () => {
 
         </div>
 
-        {/* Mobile Menu - Đã tích hợp Active State đổi màu nền */}
+        {/* Mobile Menu */}
         {isOpen && (
           <div className="md:hidden py-4 border-t border-border space-y-1 animate-fade-in">
             <NavLink
@@ -183,6 +195,16 @@ const Navbar = () => {
 
             {state.isAuthenticated ? (
               <>
+                {/* 🌟 ĐÃ SỬA: Thêm nút My Profile cho menu mobile */}
+                <Link
+                  to="/profile"
+                  onClick={() => setIsOpen(false)}
+                  className="block px-3 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                >
+                  <UserIcon className="inline w-4 h-4 mr-2 text-slate-500" />
+                  My Profile
+                </Link>
+
                 <Link
                   to="/dashboard"
                   onClick={() => setIsOpen(false)}

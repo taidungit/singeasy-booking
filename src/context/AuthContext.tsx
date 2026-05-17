@@ -12,6 +12,7 @@ export interface User {
   email: string;
   avatar?: string;
   role: string;
+  phoneNumber?: string;
 }
 
 interface AuthState {
@@ -28,7 +29,8 @@ type AuthAction =
   | { type: "LOGOUT" }
   | { type: "CLEAR_ERROR" }
   | { type: "RESTORE_USER"; payload: User }
-  | { type: "AUTH_READY" };
+  | { type: "AUTH_READY" }
+  | { type: "UPDATE_USER"; payload: User }; 
 
 const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {
@@ -48,6 +50,12 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
       return { user: null, isAuthenticated: false, isLoading: false, error: null };
     case "CLEAR_ERROR":
       return { ...state, error: null };
+    case "UPDATE_USER": // 🌟 THÊM CASE NÀY
+      localStorage.setItem("user", JSON.stringify(action.payload));
+      return { 
+        ...state, 
+        user: action.payload 
+      };
     default:
       return state;
   }
@@ -59,6 +67,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   clearError: () => void;
+  updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -69,6 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isAuthenticated: false,
     isLoading: true,
     error: null,
+    
   });
 
   // TỰ ĐỘNG KHÔI PHỤC USER KHI LOAD LẠI TRANG
@@ -132,9 +142,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => dispatch({ type: "LOGOUT" });
   const clearError = () => dispatch({ type: "CLEAR_ERROR" });
-
+  const updateUser = (updatedUser: User) => {
+    dispatch({ type: "UPDATE_USER", payload: updatedUser });
+  };
   return (
-    <AuthContext.Provider value={{ state, login, register, logout, clearError }}>
+    <AuthContext.Provider value={{ state, login, register, logout, clearError, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

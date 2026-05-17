@@ -27,6 +27,7 @@ import AdminShopDetail from "./pages/admin/AdminShopDetail";
 import AdminUserDetail from "./pages/admin/AdminUserDetail";
 import BookingManagement from "./pages/admin/BookingManagement";
 import Contact from "./pages/Contact";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
               {/* Auth pages */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/profile" element={<Profile />} />
 
               {/* Main layout */}
               <Route element={<MainLayout />}>
