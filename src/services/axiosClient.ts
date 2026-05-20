@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+
 const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL, 
+  // Nếu không tìm thấy biến môi trường, tự động gọi thẳng sang Railway Production
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://be-singeasy-booking-production.up.railway.app/api/v1', 
   headers: {
     'Content-Type': 'application/json',
   },

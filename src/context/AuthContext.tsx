@@ -1,10 +1,6 @@
 import { createContext, useContext, useReducer, ReactNode, useEffect } from "react";
-import axios from "axios";
+import axiosClient from "@/services/axiosClient"; // SỬ DỤNG AXIOS ĐÃ CẤU HÌNH SẴN (có interceptor tự động đính kèm token)
 
-// Cấu hình axios client (có thể tách ra file riêng src/api/axios.ts)
-const api = axios.create({
-  baseURL: "http://localhost:8080/api/v1",
-});
 
 export interface User {
   id: string;
@@ -101,7 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     dispatch({ type: "AUTH_START" });
     try {
       // Gửi đúng request tới AuthController của Backend
-      const response = await api.post("/auth/login", {
+      const response = await axiosClient.post("/auth/login", {
         username: email, // Backend của bạn dùng LoginDTO có trường username
         password: password
       });
@@ -123,7 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     dispatch({ type: "AUTH_START" });
     try {
       // Gửi request tới /auth/register
-      await api.post("/auth/register", {
+      await axiosClient.post("/auth/register", {
         name,
         email,
         password
