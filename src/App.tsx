@@ -97,7 +97,7 @@ const App = () => (
                 <Route path="users/edit/:userId" element={<UserForm />} />
                 <Route path="users/:id" element={<AdminUserDetail />} />
                 {/* Booking admin */}
-                <Route path="bookings" element={<BookingManagement />} />
+                <Route path="shops/:shopId/bookings" element={<BookingManagement />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

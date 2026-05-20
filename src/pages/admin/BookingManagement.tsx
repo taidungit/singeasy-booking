@@ -1,35 +1,26 @@
 import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { 
   Calendar, 
   Clock, 
   CheckCircle2, 
   XCircle, 
   Search, 
-  Filter, 
   Loader2, 
   RefreshCw,
   User,
-  Layers
+  Layers,
+  ChevronLeft 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Giả lập hoặc import các hàm gọi API Admin từ file services của bạn
-// Bạn nhớ khai báo các hàm này trong src/services/api.ts nhé
-import { fetchAllBookings, approveBooking, rejectBooking, Booking } from "@/services/api";
+import axiosClient from "@/services/axiosClient";
+import { approveBooking, rejectBooking, Booking } from "@/services/api";
 
-interface AdminBooking {
-  id: number | string;
-  bookingDate: string;
-  startTime: string;
-  duration: number;
-  totalAmount: number;
-  status: "PENDING" | "CONFIRMED" | "CANCELLED";
-  roomName: string;
-  shopName: string;
-  userName: string;
-  userEmail: string;
-  createdAt: string;
-}
+const fetchBookingsByShopId = async (shopId: string): Promise<Booking[]> => {
+  const res = await axiosClient.get<Booking[]>(`/bookings/shop/${shopId}`);
+  return res.data || [];
+};
 
 const statusStyles = {
   CONFIRMED: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -38,35 +29,37 @@ const statusStyles = {
 };
 
 const BookingManagement = () => {
+  const { shopId } = useParams<{ shopId: string }>();
+  const navigate = useNavigate();
+
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<"ALL" | "PENDING" | "CONFIRMED" | "CANCELLED">("ALL");
   const [searchTerm, setSearchTerm] = useState("");
   const [actionLoadingId, setActionLoadingId] = useState<string | number | null>(null);
 
-  // Hàm tải danh sách toàn bộ đơn đặt phòng của hệ thống
-const loadAllBookings = async () => {
-  setIsLoading(true);
-  try {
-    const data = await fetchAllBookings(); 
-    // Bây giờ cả 2 bên đều là Booking[] nên gán cực kỳ mượt mà
-    setBookings(Array.isArray(data) ? data : []);
-  } catch (error) {
-    console.error("Failed to fetch admin bookings:", error);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  const loadShopBookings = async () => {
+    if (!shopId) return;
+    setIsLoading(true);
+    try {
+      const data = await fetchBookingsByShopId(shopId); 
+      setBookings(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to fetch shop bookings:", error);
+      setBookings([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    loadAllBookings();
-  }, []);
+    loadShopBookings();
+  }, [shopId]);
 
-  // Xử lý Duyệt đơn phòng (Chuyển sang CONFIRMED)
   const handleApprove = async (id: number | string) => {
     setActionLoadingId(id);
     try {
-      await approveBooking(id); // API endpoint: PUT /api/v1/bookings/{id}/approve
+      await approveBooking(id);
       setBookings((prev) =>
         prev.map((b) => (b.id === id ? { ...b, status: "CONFIRMED" } : b))
       );
@@ -77,12 +70,11 @@ const loadAllBookings = async () => {
     }
   };
 
-  // Xử lý Từ chối / Hủy đơn phòng (Chuyển sang CANCELLED)
   const handleReject = async (id: number | string) => {
     if (!confirm("Are you sure you want to reject this booking?")) return;
     setActionLoadingId(id);
     try {
-      await rejectBooking(id); // API endpoint: PUT /api/v1/bookings/{id}/cancel
+      await rejectBooking(id);
       setBookings((prev) =>
         prev.map((b) => (b.id === id ? { ...b, status: "CANCELLED" } : b))
       );
@@ -93,31 +85,31 @@ const loadAllBookings = async () => {
     }
   };
 
-  // Logic lọc dữ liệu theo thanh tìm kiếm và bộ lọc trạng thái công việc
   const filteredBookings = bookings.filter((b) => {
     const matchesStatus = statusFilter === "ALL" || b.status === statusFilter;
     const matchesSearch = 
       (b.userName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-      (b.shopName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
       (b.roomName?.toLowerCase() || "").includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-6 sm:p-8 font-sans">
+    <div className="p-6 font-sans min-h-screen">
       <div className="max-w-7xl mx-auto">
         
         {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Booking Management</h1>
-            <p className="text-sm font-medium text-slate-500 mt-0.5">Review, approve, and manage customer karaoke reservations.</p>
-          </div>
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/admin/shops")}>
+            <ChevronLeft />
+          </Button>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Booking Management - Shop #{shopId}
+          </h1>
           <Button 
             variant="outline" 
-            onClick={loadAllBookings} 
+            onClick={loadShopBookings} 
             disabled={isLoading}
-            className="w-fit gap-2 font-semibold border-slate-200 rounded-xl"
+            className="ml-auto gap-2 font-semibold border-slate-200 rounded-xl"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} /> Refresh
           </Button>
@@ -140,19 +132,17 @@ const loadAllBookings = async () => {
 
         {/* Filter Controls Bar */}
         <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
-          {/* Thanh tìm kiếm */}
           <div className="relative w-full md:w-80">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search user, shop, room..."
+              placeholder="Search user, room..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 font-medium transition-all"
             />
           </div>
 
-          {/* Nhóm nút lọc nhanh Tab Trạng thái */}
           <div className="flex flex-wrap gap-1.5 w-full md:w-auto">
             {(["ALL", "PENDING", "CONFIRMED", "CANCELLED"] as const).map((tab) => (
               <button
@@ -174,7 +164,7 @@ const loadAllBookings = async () => {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-2xl">
             <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-2" />
-            <p className="text-slate-400 text-sm font-medium">Loading system bookings...</p>
+            <p className="text-slate-400 text-sm font-medium">Loading shop bookings...</p>
           </div>
         ) : (
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
@@ -192,7 +182,6 @@ const loadAllBookings = async () => {
                 <tbody className="divide-y divide-slate-100 text-sm font-medium text-slate-700">
                   {filteredBookings.map((booking) => (
                     <tr key={booking.id} className="hover:bg-slate-50/50 transition-colors">
-                      {/* Cột 1: Thông tin khách đặt và địa điểm */}
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
@@ -208,7 +197,6 @@ const loadAllBookings = async () => {
                         </div>
                       </td>
 
-                      {/* Cột 2: Chi tiết lịch hẹn ngày giờ & phòng hát */}
                       <td className="py-4 px-6">
                         <div>
                           <div className="flex items-center gap-1.5 text-slate-900 font-bold mb-1">
@@ -228,67 +216,68 @@ const loadAllBookings = async () => {
                         </div>
                       </td>
 
-                      {/* Cột 3: Tổng số tiền phải thu */}
                       <td className="py-4 px-6">
                         <p className="text-base font-black text-slate-900">${booking.totalAmount}</p>
                         <p className="text-[10px] font-bold text-slate-400 uppercase">Settled</p>
                       </td>
 
-                      {/* Cột 4: Huy hiệu Trạng thái */}
                       <td className="py-4 px-6">
                         <span className={`text-xs font-bold px-3 py-1 border rounded-full ${statusStyles[booking.status] || statusStyles.PENDING}`}>
                           {booking.status}
                         </span>
                       </td>
 
-                      {/* Cột 5: Cụm nút thao tác xử lý Duyệt/Từ chối */}
+                      {/* 💡 CỘT ACTIONS ĐÃ ĐƯỢC THAY ĐỔI STYLE NỔI BẬT, RÕ RÀNG */}
                       <td className="py-4 px-6 text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end items-center gap-2">
                           {booking.status === "PENDING" ? (
                             <>
-                              {/* Nút Duyệt phòng (Approve) */}
+                              {/* Nút Duyệt: Nền xanh lá nhạt, chữ xanh lá đậm */}
                               <Button
                                 size="sm"
+                                title="Approve Reservation"
                                 onClick={() => handleApprove(booking.id)}
                                 disabled={actionLoadingId !== null}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1 rounded-xl h-8 text-xs"
+                                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold gap-1 rounded-xl h-8 px-3 text-xs shadow-none"
                               >
                                 {actionLoadingId === booking.id ? (
                                   <Loader2 className="w-3 h-3 animate-spin" />
                                 ) : (
-                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                                 )}
                                 Approve
                               </Button>
 
-                              {/* Nút Từ chối đơn (Reject) */}
+                              {/* Nút Từ chối: Nền đỏ nhạt, chữ đỏ đậm */}
                               <Button
                                 size="sm"
-                                variant="outline"
+                                title="Reject Reservation"
                                 onClick={() => handleReject(booking.id)}
                                 disabled={actionLoadingId !== null}
-                                className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 font-bold gap-1 rounded-xl h-8 text-xs"
+                                className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold gap-1 rounded-xl h-8 px-3 text-xs shadow-none"
                               >
-                                <XCircle className="w-3.5 h-3.5" />
+                                <XCircle className="w-3.5 h-3.5 text-rose-600" />
                                 Reject
                               </Button>
                             </>
                           ) : (
-                            // Nếu đơn đã ở trạng thái CONFIRMED hoặc CANCELLED thì hiện nút Hủy dự phòng nếu chưa quá ngày
                             booking.status === "CONFIRMED" && (
+                              /* Nút Hủy: Nền xám nhạt */
                               <Button
                                 size="sm"
-                                variant="ghost"
+                                title="Cancel Active Session"
                                 onClick={() => handleReject(booking.id)}
                                 disabled={actionLoadingId !== null}
-                                className="text-xs text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl h-8 font-bold"
+                                className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-bold rounded-xl h-8 px-3 text-xs shadow-none"
                               >
                                 Cancel Session
                               </Button>
                             )
                           )}
                           {booking.status === "CANCELLED" && (
-                            <span className="text-xs font-semibold text-slate-400 pr-2">Archived</span>
+                            <span className="text-xs font-semibold text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl">
+                              Archived
+                            </span>
                           )}
                         </div>
                       </td>
@@ -298,7 +287,7 @@ const loadAllBookings = async () => {
                   {filteredBookings.length === 0 && (
                     <tr>
                       <td colSpan={5} className="text-center py-12 text-slate-400 font-semibold">
-                        No reservations found matching the current filters.
+                        No reservations found for this specific shop.
                       </td>
                     </tr>
                   )}

@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ChevronLeft, Save, Upload, User, Mail, Phone, Lock, ShieldCheck, ImageIcon, Loader2 } from "lucide-react";
 import axiosClient from "@/services/axiosClient";
-import { AxiosResponse } from "axios";
 
 // Interface khớp với UserResDto và UserReqDto của BE
 interface UserFormData {
@@ -19,9 +18,9 @@ interface UserFormData {
 }
 
 const UserForm = () => {
-  const { id } = useParams();
+  const { userId } = useParams();
   const navigate = useNavigate();
-  const isEdit = Boolean(id);
+  const isEdit = Boolean(userId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [loading, setLoading] = useState(false);
@@ -36,32 +35,44 @@ const UserForm = () => {
   });
 
   // 1. FETCH DATA KHI TRONG CHẾ ĐỘ EDIT
-  useEffect(() => {
-    const fetchUser = async () => {
-      if (isEdit && id) {
-        try {
-          setLoading(true);
-          const res = await axiosClient.get<UserFormData>(`/users/${id}`);
-          const data = "data" in res ? res.data : res;
-          
-          setFormData({
-            name: data.name || "",
-            email: data.email || "",
-            password: "", // Không bao giờ load password cũ về client
-            phoneNumber: data.phoneNumber || "",
-            role: data.role || "USER",
-            avatar: data.avatar || ""
-          });
-          setImagePreview(data.avatar || null);
-        } catch (error) {
-          toast.error("Failed to load user data");
-        } finally {
-          setLoading(false);
+    useEffect(() => {
+      const fetchUser = async () => {
+        if (isEdit && userId) {
+          try {
+            setLoading(true);
+            // Gọi API lấy chi tiết user
+            const res = await axiosClient.get(`/users/${userId}`);
+            
+            // 💡 KIỂM TRA VÀ TRÍCH XUẤT DATA CHÍNH XÁC
+            // Đảm bảo lấy đúng object chứa thông tin user (đề phòng axiosClient đã bọc hoặc chưa bọc .data)
+            const data = res && typeof res === "object" && "data" in res ? res.data : res;
+
+            // In ra console để bạn kiểm tra xem API có trả về đúng thông tin không
+            console.log("User data fetched:", data);
+
+            if (data) {
+              setFormData({
+                name: data.name || "",
+                email: data.email || "",
+                password: "", // Giữ nguyên trống để không ghi đè mật khẩu cũ của người dùng
+                phoneNumber: data.phoneNumber || "",
+                role: data.role || "USER",
+                avatar: data.avatar || ""
+              });
+              setImagePreview(data.avatar || null);
+            } else {
+              toast.error("User data is empty");
+            }
+          } catch (error) {
+            console.error("Error fetching user:", error);
+            toast.error("Failed to load user data");
+          } finally {
+            setLoading(false);
+          }
         }
-      }
-    };
-    fetchUser();
-  }, [id, isEdit]);
+      };
+      fetchUser();
+    }, [userId, isEdit]);
 
   // 2. XỬ LÝ CHỌN ẢNH (BASE64)
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,21 +94,43 @@ const UserForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation cơ bản
-    if (!formData.name || !formData.email) return toast.error("Name and Email are required!");
-    if (!isEdit && !formData.password) return toast.error("Password is required for new accounts!");
+    // Validation cơ bản phía Client
+    if (!formData.name.trim() || !formData.email.trim()) {
+      return toast.error("Name and Email are required!");
+    }
+    if (!isEdit && !formData.password) {
+      return toast.error("Password is required for new accounts!");
+    }
 
     setLoading(true);
     try {
+      // Khởi tạo một payload sạch để gửi lên BE
+      const payload: Partial<UserFormData> = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phoneNumber: formData.phoneNumber.trim(),
+        role: formData.role,
+        avatar: formData.avatar
+      };
+
       if (isEdit) {
+        // Nếu trường password có dữ liệu (người dùng muốn đổi mật khẩu mới)
+        if (formData.password && formData.password.trim() !== "") {
+          payload.password = formData.password;
+        }
+        
         // UPDATE: PUT /api/v1/users/{id}
-        await axiosClient.put(`/users/${id}`, formData);
+        await axiosClient.put(`/users/${userId}`, payload);
         toast.success("User updated successfully");
       } else {
+        // Khi tạo mới tài khoản thì bắt buộc phải có password
+        payload.password = formData.password;
+        
         // CREATE: POST /api/v1/users
-        await axiosClient.post("/users", formData);
+        await axiosClient.post("/users", payload);
         toast.success("New user created successfully");
       }
+      
       setTimeout(() => navigate("/admin/users"), 1000);
     } catch (error: unknown) {
       const errorMsg = error instanceof Error ? error.message : "An error occurred while saving";

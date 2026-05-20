@@ -1,28 +1,83 @@
 import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Store, 
   Users, 
-  Settings, 
   LogOut, 
-  Mic2 
+  Mic2,
+  UserIcon,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 const AdminLayout = () => {
-  const { logout } = useAuth();
+  const { state, logout } = useAuth();
+  const { user } = state; // Lấy thông tin admin đang đăng nhập từ context
   const location = useLocation();
+  const navigate = useNavigate();
 
-  // Hàm kiểm tra xem Link có đang được active không để đổi màu
-  const isActive = (path: string) => location.pathname === path;
+  // Hàm kiểm tra xem Link có đang được active không để đổi màu (Hỗ trợ tốt các route con)
+  const isActive = (path: string) => {
+    if (path === '/admin') {
+      return location.pathname === '/admin';
+    }
+    return location.pathname.startsWith(path);
+  };
 
   const menuItems = [
     { name: 'Dashboard', path: '/admin', icon: <LayoutDashboard size={20} /> },
     { name: 'Shop Management', path: '/admin/shops', icon: <Store size={20} /> },
     { name: 'User Management', path: '/admin/users', icon: <Users size={20} /> },
-    // { name: 'Booking Management', path: '/admin/bookings', icon: <Settings size={20} /> },
   ];
+
+  // 💡 HÀM GENERATE BREADCRUMB TƯƠNG TÁC ĐƯỢC ĐỂ CLICK BACK VỀ TRANG TRƯỚC
+  // Biến cấu trúc như "/admin/shops/1/bookings" thành các nút bấm tương tác được
+  const renderBreadcrumbs = () => {
+    const paths = location.pathname.split('/').filter(Boolean);
+    let currentPath = '';
+
+    return (
+      <div className="flex items-center gap-1.5 text-sm text-slate-500 font-medium">
+        <Link to="/admin" className="hover:text-slate-900 transition-colors">Administration</Link>
+        {paths.map((path, index) => {
+          if (path === 'admin') return null; // Bỏ qua chữ admin đầu tiên vì đã có nút phía trước
+          currentPath += `/${path}`;
+          
+          // Kiểm tra xem đoạn đường dẫn này có phải là ID (số) không, nếu là ID thì hiển thị đẹp hơn
+          const isId = !isNaN(Number(path));
+          const displayName = isId ? `#${path}` : path.replace(/-/g, ' ');
+
+          // Nếu là phần tử cuối cùng thì không cho click (đang đứng ở đó)
+          const isLast = index === paths.length - 1;
+
+          return (
+            <React.Fragment key={currentPath}>
+              <ChevronRight size={14} className="text-slate-400 shrink-0" />
+              {isLast ? (
+                <span className="text-slate-900 font-semibold capitalize">{displayName}</span>
+              ) : (
+                <Link 
+                  to={index === 1 ? `/admin/${path}` : `/admin/shops`} // Tùy biến linh hoạt để back về trang quản lý cha
+                  className="hover:text-slate-900 transition-colors capitalize"
+                >
+                  {displayName}
+                </Link>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className="flex min-h-screen bg-[#f8fafc]">
@@ -75,18 +130,61 @@ const AdminLayout = () => {
       <div className="flex-1 flex flex-col">
         {/* Top Header */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm">
-          <div className="text-sm text-slate-500 font-medium">
-            Administration Page &nbsp; / &nbsp; 
-            <span className="text-slate-900 capitalize">
-              {location.pathname.split('/').pop() || 'Dashboard'}
-            </span>
-          </div>
+          {/* 💡 ĐÃ CẬP NHẬT: Breadcrumbs có khả năng click để quay lại */}
+          {renderBreadcrumbs()}
+
+          {/* 💡 ĐÃ SỬA: Khối thông tin admin đồng bộ ảnh, tên từ Context và tích hợp Dropdown y hệt Client */}
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-bold text-slate-900">Admin</p>
-              <p className="text-xs text-slate-500">Quản trị viên</p>
+              <p className="text-sm font-bold text-slate-900">{user?.name || "Admin"}</p>
+              <p className="text-xs text-slate-500">Admin</p>
             </div>
-            <div className="h-10 w-10 rounded-full bg-slate-200 border-2 border-white shadow-sm"></div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="h-10 w-10 rounded-full border-2 border-white bg-slate-200 shadow-sm overflow-hidden flex items-center justify-center hover:opacity-90 transition-all outline-none">
+                  {user?.avatar ? (
+                    <img 
+                      src={user.avatar} 
+                      alt="Admin Avatar" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-slate-700 text-sm font-bold uppercase">
+                      {user?.name ? user.name.charAt(0) : "A"}
+                    </span>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              
+              <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-md mt-2">
+                <DropdownMenuItem 
+                  onClick={() => navigate("/profile")} 
+                  className="cursor-pointer py-2 font-medium"
+                >
+                  <UserIcon className="w-4 h-4 mr-2 text-slate-500" /> 
+                  Edit My Profile
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem 
+                  onClick={() => navigate("/")} 
+                  className="cursor-pointer py-2 font-medium"
+                >
+                  <Mic2 className="w-4 h-4 mr-2 text-slate-500" /> 
+                  Go to Client Site
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem
+                  onClick={logout}
+                  className="text-destructive cursor-pointer py-2 focus:bg-destructive/5 font-medium"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 

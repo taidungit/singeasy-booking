@@ -93,7 +93,7 @@ const ShopManagement = () => {
                     <div className="flex justify-end items-center gap-2">
                       {/* Nút Booking mới: Dẫn tới trang quản lý booking của riêng Shop này */}
                       <Button variant="outline" size="sm" className="border-blue-200 text-blue-600 hover:bg-blue-50" asChild>
-                        <Link to={`/admin/bookings?shopId=${shop.id}`}>
+                        <Link to={`/admin/shops/${shop.id}/bookings`}>
                           <CalendarDays className="h-4 w-4 mr-1" />
                           Booking
                         </Link>
