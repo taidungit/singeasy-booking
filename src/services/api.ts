@@ -1,6 +1,11 @@
 import axiosClient from "./axiosClient"; 
 
 // ─── TYPES (ĐỒNG BỘ 100% VỚI BACKEND DTO) ──────────────────────────────────
+export interface OccupiedSlot {
+  startTime: string; // Định dạng "HH:mm" từ BE trả về
+  endTime: string;   // Định dạng "HH:mm" do BE tự động tính toán
+}
+
 
 export interface Shop {
   id: string;
@@ -27,6 +32,7 @@ export interface Room {
   imageUrl: string;
   status: string; 
   amenities: string[];
+  isFullyBooked: boolean;
 }
 
 // Kiểu dữ liệu Đơn đặt phòng nhận về từ Backend (BookingResDto)
@@ -150,6 +156,12 @@ export const cancelBooking = async (id: string): Promise<void> => {
   await axiosClient.put(`/bookings/${id}/cancel`);
 };
 
+export const fetchOccupiedSlots = async (roomId: string | number, date: string): Promise<OccupiedSlot[]> => {
+  const res = await axiosClient.get<OccupiedSlot[]>("/bookings/occupied-slots", {
+    params: { roomId, date }
+  });
+  return res.data || [];
+};
 // ─── REVIEWS ───────────────────────
 
 export const getReviewsByShop = async (shopId: string | number): Promise<Review[]> => {

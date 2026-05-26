@@ -4,7 +4,7 @@ import { Calendar, Clock, Minus, Plus, ArrowRight, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { useBooking } from "@/context/BookingContext";
 import { useAuth } from "@/context/AuthContext";
-import { createBooking } from "@/services/api";
+import { createBooking, fetchOccupiedSlots } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 
 const TIME_SLOTS = [
@@ -21,44 +21,82 @@ const BookingForm = () => {
 
   const today = new Date().toISOString().split("T")[0];
 
-  // 🟢 Hàm kiểm tra xem khung giờ đã trôi qua so với giờ hiện tại chưa (Chỉ check nếu là ngày hôm nay)
+  // 🟢 1. Hàm check va chạm lịch động dựa vào danh sách bận thu được từ Spring Boot
+  const checkTimeCollision = useCallback((startStr: string, durationHours: number): boolean => {
+    if (!startStr || !state.occupiedSlots || state.occupiedSlots.length === 0) return false;
+
+    const startHour = Number(startStr.split(":")[0]);
+    const endHour = startHour + durationHours;
+
+    for (const slot of state.occupiedSlots) {
+      const slotStart = Number(slot.startTime.split(":")[0]);
+      const slotEnd = Number(slot.endTime.split(":")[0]);
+
+      // Thuật toán so khớp khoảng Overlap: (Start1 < End2 VÀ End1 > Start2)
+      if (startHour < slotEnd && endHour > slotStart) {
+        return true; 
+      }
+    }
+    return false;
+  }, [state.occupiedSlots]);
+
+  // 🟢 2. Hàm phối hợp chặn cả giờ quá khứ trong ngày lẫn các giờ phòng đã có lịch bận
   const isTimeSlotDisabled = useCallback((timeSlot: string): boolean => {
     if (!state.date) return false;
 
-    // So sánh ngày được chọn với ngày hôm nay hệ thống
-    const isToday = state.date === today;
-    if (!isToday) return false;
+    // Check quá khứ nếu chọn ngày hôm nay
+    if (state.date === today) {
+      const currentHour = new Date().getHours();
+      const [slotHour] = timeSlot.split(":").map(Number);
+      if (slotHour <= currentHour) return true;
+    }
 
-    // Trích xuất giờ hiện tại và giờ của slot (Ví dụ: "14:00" -> 14)
-    const currentHour = new Date().getHours();
-    const [slotHour] = timeSlot.split(":").map(Number);
+    // Check trùng lịch với đơn cũ trong DB (Giả định đặt tối thiểu 1 giờ)
+    return checkTimeCollision(timeSlot, 1);
+  }, [state.date, today, checkTimeCollision]);
 
-    // Nếu giờ của ô đặt nhỏ hơn hoặc bằng giờ hiện hành thì disable
-    return slotHour <= currentHour;
-  }, [state.date, today]);
-
-  // Tự động set ngày đặt mặc định là hôm nay nếu state.date đang trống
+  // Tự động gán ngày hôm nay làm mặc định ban đầu nếu trống
   useEffect(() => {
     if (!state.date) {
       dispatch({ type: "SET_DATE", payload: today });
     }
   }, [state.date, dispatch, today]);
 
-  // 🟢 Tự động chỉnh lại startTime nếu vô tình dính vào khung giờ đã qua khi chọn ngày hôm nay
+  // 🟢 3. useEffect gọi API bốc lịch bận từ Backend mỗi khi đổi phòng hoặc đổi ngày
   useEffect(() => {
-    if (state.date === today && state.startTime) {
-      if (isTimeSlotDisabled(state.startTime)) {
-        // Tìm khung giờ trống hợp lệ đầu tiên còn lại trong ngày
-        const firstAvailableSlot = TIME_SLOTS.find(t => !isTimeSlotDisabled(t));
-        if (firstAvailableSlot) {
-          dispatch({ type: "SET_TIME", payload: firstAvailableSlot });
-        } else {
-          // Trường hợp đã quá 23h đêm, không còn slot nào đặt được trong ngày
-          dispatch({ type: "SET_TIME", payload: "" });
+    const loadRoomSchedule = async () => {
+      if (!state.selectedRoom?.id || !state.date) return;
+      try {
+        const slots = await fetchOccupiedSlots(state.selectedRoom.id, state.date);
+        dispatch({ type: "SET_OCCUPIED_SLOTS", payload: slots });
+      } catch (err) {
+        console.error("Failed to load occupied slots:", err);
+      }
+    };
+    loadRoomSchedule();
+  }, [state.selectedRoom?.id, state.date, dispatch]);
+
+  // 🟢 4. Tự động kiểm tra điều chỉnh lại StartTime hợp lệ nếu dính slot bận/quá giờ
+  useEffect(() => {
+    if (state.startTime && isTimeSlotDisabled(state.startTime)) {
+      const firstAvailableSlot = TIME_SLOTS.find(t => !isTimeSlotDisabled(t));
+      dispatch({ type: "SET_TIME", payload: firstAvailableSlot || "" });
+    }
+  }, [state.date, isTimeSlotDisabled, state.startTime, dispatch]);
+
+  // 🟢 5. Tự động ép Duration co cụm lại nếu người dùng tăng số giờ vượt quá mốc giờ bận tiếp theo
+  useEffect(() => {
+    if (state.startTime && state.hours > 1) {
+      if (checkTimeCollision(state.startTime, state.hours)) {
+        // Thu hẹp thời lượng về mức tối đa có thể cho phép
+        let maxAvailableHours = 1;
+        while (maxAvailableHours < 8 && !checkTimeCollision(state.startTime, maxAvailableHours + 1)) {
+          maxAvailableHours++;
         }
+        dispatch({ type: "SET_HOURS", payload: maxAvailableHours });
       }
     }
-  }, [state.date, today, isTimeSlotDisabled, state.startTime, dispatch]);
+  }, [state.startTime, state.hours, checkTimeCollision, dispatch]);
 
   const handleHoursChange = (delta: number) => {
     const next = Math.max(1, Math.min(8, state.hours + delta));
@@ -72,11 +110,12 @@ const BookingForm = () => {
     }
     
     if (!state.selectedRoom || !state.date || !state.startTime) {
-      toast({ 
-        title: "Missing details", 
-        description: "Please fill in all booking fields.", 
-        variant: "destructive" 
-      });
+      toast({ title: "Missing details", description: "Please fill in all booking fields.", variant: "destructive" });
+      return;
+    }
+
+    if (checkTimeCollision(state.startTime, state.hours)) {
+      toast({ title: "Time conflict", description: "The selected duration conflicts with another booking.", variant: "destructive" });
       return;
     }
 
@@ -93,21 +132,16 @@ const BookingForm = () => {
       dispatch({ type: "CLEAR_BOOKING" });
       navigate("/dashboard");
       
-      toast({ 
-        title: "Booking confirmed! 🎉", 
-        description: "Check your dashboard for details." 
-      });
+      toast({ title: "Booking confirmed! 🎉", description: "Check your dashboard for details." });
     } catch (error) {
       console.error("Booking submit error:", error);
-      toast({ 
-        title: "Booking failed", 
-        description: "This room might have been booked or connection lost. Please try again.", 
-        variant: "destructive" 
-      });
+      toast({ title: "Booking failed", description: "This room might have been booked. Please try again.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
   };
+
+  const isCollisionDetected = checkTimeCollision(state.startTime, state.hours);
 
   return (
     <div className="space-y-4">
@@ -136,9 +170,8 @@ const BookingForm = () => {
             onChange={(e) => dispatch({ type: "SET_TIME", payload: e.target.value })}
             className="flex-1 text-sm bg-transparent focus:outline-none text-foreground font-semibold cursor-pointer"
           >
-            {/* Trường hợp đặc biệt khi hết giờ đặt trong ngày */}
-            {state.date === today && !TIME_SLOTS.some(t => !isTimeSlotDisabled(t)) && (
-              <option value="">No slots available today</option>
+            {!TIME_SLOTS.some(t => !isTimeSlotDisabled(t)) && (
+              <option value="">No slots available for this date</option>
             )}
             
             {TIME_SLOTS.map((t) => {
@@ -150,7 +183,7 @@ const BookingForm = () => {
                   disabled={disabled}
                   className={disabled ? "text-slate-400 bg-slate-100 line-through" : "text-foreground font-medium"}
                 >
-                  {t} {disabled ? "(Past)" : ""}
+                  {t} {disabled ? "(Unavailable)" : ""}
                 </option>
               );
             })}
@@ -178,7 +211,8 @@ const BookingForm = () => {
             <button
               type="button"
               onClick={() => handleHoursChange(1)}
-              disabled={state.hours >= 8}
+              // 🟢 CHẶN NÚT CỘNG: Nếu tăng thêm 1 giờ tiếp theo mà đâm sầm vào lịch bận của người khác thì disable nút cộng
+              disabled={state.hours >= 8 || !state.startTime || checkTimeCollision(state.startTime, state.hours + 1)}
               className="w-8 h-8 rounded-full border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 transition-all shadow-sm"
             >
               <Plus className="w-3.5 h-3.5 text-slate-600" />
@@ -208,15 +242,19 @@ const BookingForm = () => {
 
       {/* Submit Button */}
       <Button
-        className="w-full gap-2 py-6 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-100 active:scale-[0.98] transition-all"
+        className={`w-full gap-2 py-6 text-base font-bold text-white rounded-xl shadow-md active:scale-[0.98] transition-all ${
+          isCollisionDetected ? "bg-amber-600 hover:bg-amber-700 shadow-amber-100" : "bg-blue-600 hover:bg-blue-700 shadow-blue-100"
+        }`}
         onClick={handleSubmit}
-        disabled={isLoading || !state.selectedRoom || !state.startTime}
+        disabled={isLoading || !state.selectedRoom || !state.startTime || isCollisionDetected}
       >
         {isLoading ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin" />
             Confirming booking...
           </>
+        ) : isCollisionDetected ? (
+          "Time Slot Conflicting"
         ) : (
           <>
             Reserve Room 

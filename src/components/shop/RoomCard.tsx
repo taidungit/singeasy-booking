@@ -19,8 +19,9 @@ const RoomCard = ({ room, shopId, shopName }: RoomCardProps) => {
   const { dispatch } = useBooking();
   const navigate = useNavigate();
 
-  // 1. Xác định biến trạng thái để tránh dùng room.available cũ gây mờ (opacity-60)
-  const isAvailable = room.status === "AVAILABLE";
+  // 🟢 THAY ĐỔI QUAN TRỌNG: Xác định trạng thái rảnh dựa vào cờ kiểm tra kín lịch từ Backend
+  // Phòng chỉ bị coi là không thể đặt được nữa nếu nó đã bị Fully Booked
+  const isAvailable = !room.isFullyBooked;
 
   const handleBook = () => {
     dispatch({ type: "SET_ROOM", payload: room });
@@ -32,8 +33,8 @@ const RoomCard = ({ room, shopId, shopName }: RoomCardProps) => {
     <div 
       className={`flex gap-4 p-4 rounded-2xl border border-border transition-all ${
         isAvailable 
-          ? "hover:border-primary/50 hover:shadow-card" 
-          : "opacity-60 bg-muted/30" // Chỉ mờ khi status KHÔNG PHẢI là AVAILABLE
+          ? "hover:border-primary/50 hover:shadow-card bg-background" 
+          : "opacity-60 bg-muted/30 select-none" // Chỉ làm mờ giao diện khi phòng đã hết sạch slot trong ngày
       }`}
     >
       {/* Image */}
@@ -53,24 +54,20 @@ const RoomCard = ({ room, shopId, shopName }: RoomCardProps) => {
           </div>
           <div className="text-right flex-shrink-0">
             <p className="text-xl font-bold text-foreground">
-              {/* Nếu dùng VNĐ bạn nên .toLocaleString() để dễ nhìn */}
+              {/* Định dạng tiền tệ hiển thị đẹp mắt hơn nếu sau này cấu hình sang VNĐ */}
               ${room.pricePerHour}
             </p>
             <p className="text-xs text-muted-foreground">per hour</p>
           </div>
         </div>
 
-        {/* Amenities - FIX LỖI HIỂN THỊ TRONG HÌNH image_74107c.png */}
+        {/* Amenities */}
         <div className="flex flex-wrap gap-1.5 mt-2.5">
           {room.amenities && room.amenities.slice(0, 3).map((a, index) => (
             <span 
               key={index} 
               className="text-[10px] font-medium bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full"
             >
-              {/* 
-                Trong hình image_74107c.png, 'a' đang là 1 Object nên nó hiện mã Java.
-                Ta cần truy cập vào thuộc tính '.name' của Object đó.
-              */}
               {typeof a === 'object' && a !== null ? (a as Amenity).name : a}
             </span>
           ))}
@@ -82,8 +79,8 @@ const RoomCard = ({ room, shopId, shopName }: RoomCardProps) => {
 
       {/* Availability + Book */}
       <div className="flex flex-col items-end justify-between gap-2 flex-shrink-0">
-        <div className={`flex items-center gap-1 text-xs font-medium ${
-          isAvailable ? "text-success" : "text-destructive"
+        <div className={`flex items-center gap-1 text-xs font-semibold ${
+          isAvailable ? "text-emerald-600" : "text-destructive"
         }`}>
           {isAvailable ? (
             <>
@@ -93,18 +90,22 @@ const RoomCard = ({ room, shopId, shopName }: RoomCardProps) => {
           ) : (
             <>
               <XCircle className="w-3.5 h-3.5" />
-              Booked
+              Booked Out
             </>
           )}
         </div>
         
         <Button
           size="sm"
-          disabled={!isAvailable}
+          disabled={!isAvailable} // Nút bấm tự động mở khóa nếu phòng còn khung giờ trống
           onClick={handleBook}
-          className="text-xs"
+          className={`text-xs font-bold rounded-xl px-4 py-2 transition-all ${
+            isAvailable 
+              ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-100" 
+              : "bg-slate-200 text-slate-400 cursor-not-allowed"
+          }`}
         >
-          Book Room
+          {isAvailable ? "Book Room" : "Booked"}
         </Button>
       </div>
     </div>
