@@ -1,11 +1,3 @@
-import shop1Img from "@/assets/shop-1.jpg";
-import shop2Img from "@/assets/shop-2.jpg";
-import shop3Img from "@/assets/shop-3.jpg";
-import roomBlueImg from "@/assets/room-blue.jpg";
-import roomVipImg from "@/assets/room-vip.jpg";
-import roomCozyImg from "@/assets/room-cozy.jpg";
-import roomGallery1Img from "@/assets/room-gallery-1.jpg";
-
 import axiosClient from "./axiosClient"; 
 
 // ─── TYPES (ĐỒNG BỘ 100% VỚI BACKEND DTO) ──────────────────────────────────
@@ -56,7 +48,7 @@ export interface Booking {
   createdAt: string;
 }
 
-// 🌟 THÊM ĐỊNH NGHĨA REQUEST DTO ĐỂ KHỚP VỚI BACKEND SPRING BOOT
+// Định nghĩa Request DTO để khớp với Backend Spring Boot
 export interface BookingReqDto {
   roomId: number | string;
   bookingDate: string;
@@ -65,6 +57,7 @@ export interface BookingReqDto {
   serviceFee: number;
 }
 
+// Kiểu dữ liệu Đánh giá nhận về từ Backend (ReviewResDto)
 export interface Review {
   id: string;
   shopId: string;
@@ -75,12 +68,29 @@ export interface Review {
   createdAt: string;
 }
 
+// Định nghĩa Request DTO gửi lên cho Review (ReviewReqDto)
+export interface ReviewReqDto {
+  shopId: number | string;
+  rating: number;
+  comment: string;
+}
+
+// Định nghĩa Interface Filter đồng bộ chính xác với các `@Param` của Backend
+export interface ShopFilters {
+  name?: string;
+  address?: string;
+  minRating?: number;
+  minPrice?: number;
+  maxPrice?: number;
+}
+
+// ─── API FUNCTIONS ────────────────────────────────────────────────────────────
+
 export const updateProfile = async (
   name: string,
   phoneNumber: string,
   avatarBase64: string | null
 ): Promise<unknown> => {
-  // Gửi JSON thông thường cực kỳ gọn nhẹ
   const res = await axiosClient.put<unknown>("/users/profile", {
     name,
     phoneNumber,
@@ -89,17 +99,24 @@ export const updateProfile = async (
   return res.data;
 };
 
-// ─── API FUNCTIONS ────────────────────────────────────────────────────────────
+// ─── SHOPS & ROOMS (CHIA TÁCH BIỆT THEO Ý BẠN) ────────────────────────────────
 
-export const fetchShops = async (params?: {
-  query?: string;
-  city?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  minRating?: number;
-}): Promise<Shop[]> => {
-  const res = await axiosClient.get<Shop[]>("/shops", { params });
-  return res.data;
+/**
+ * 🔵 1. Lấy toàn bộ danh sách quán Karaoke mặc định (Không truyền bộ lọc)
+ * Endpoint ở Backend: GET /api/v1/shops
+ */
+export const fetchShops = async (): Promise<Shop[]> => {
+  const res = await axiosClient.get<Shop[]>("/shops");
+  return res.data || [];
+};
+
+/**
+ * 🟢 2. Tìm kiếm và lọc nâng cao chuyên biệt
+ * Endpoint ở Backend: GET /api/v1/shops/search
+ */
+export const fetchFilteredShops = async (params: ShopFilters): Promise<Shop[]> => {
+  const res = await axiosClient.get<Shop[]>("/shops/search", { params });
+  return res.data || [];
 };
 
 export const fetchShopById = async (id: string): Promise<Shop | null> => {
@@ -112,13 +129,18 @@ export const fetchRoomsByShop = async (shopId: string): Promise<Room[]> => {
   return res.data || [];
 };
 
-// 🌟 SỬA ĐỔI KIỂU DỮ LIỆU ĐẦU VÀO THÀNH BookingReqDto
+export const getFeaturedShops = async (): Promise<Shop[]> => {
+  const res = await axiosClient.get<Shop[]>("/shops/featured");
+  return res.data || [];
+};
+
+// ─── BOOKINGS (USER) ──────────────────────────────────────────────────────────
+
 export const createBooking = async (data: BookingReqDto): Promise<Booking> => {
   const res = await axiosClient.post<Booking>("/bookings", data);
   return res.data;
 };
 
-// Sửa lại endpoint /history khớp với Backend Controller của bạn
 export const fetchUserBookings = async (): Promise<Booking[]> => {
   const res = await axiosClient.get<Booking[]>("/bookings/history");
   return res.data || [];
@@ -128,38 +150,42 @@ export const cancelBooking = async (id: string): Promise<void> => {
   await axiosClient.put(`/bookings/${id}/cancel`);
 };
 
-export const fetchReviews = async (shopId: string): Promise<Review[]> => {
-  const res = await axiosClient.get<Review[]>(`/shops/${shopId}/reviews`);
+// ─── REVIEWS ───────────────────────
+
+export const getReviewsByShop = async (shopId: string | number): Promise<Review[]> => {
+  const res = await axiosClient.get<Review[]>(`/reviews/shop/${shopId}`);
   return res.data || [];
 };
 
-export const createReview = async (data: Omit<Review, "id" | "createdAt">): Promise<Review> => {
+export const createReview = async (data: ReviewReqDto): Promise<Review> => {
   const res = await axiosClient.post<Review>("/reviews", data);
   return res.data;
 };
 
-export const getFeaturedShops = async (): Promise<Shop[]> => {
-  const res = await axiosClient.get<Shop[]>("/shops/featured");
-  return res.data || [];
-};
+// ─── BOOKINGS (ADMIN) ─────────────────────────────────────────────────────────
 
-
-// Booking for admin
-
-// 1. Lấy toàn bộ danh sách đơn đặt phòng hệ thống dành cho Admin
 export const fetchAllBookings = async (): Promise<Booking[]> => {
   const res = await axiosClient.get<Booking[]>("/bookings");
   return res.data || [];
 };
 
-// 2. Admin duyệt đơn phòng (Chuyển trạng thái từ PENDING -> CONFIRMED)
 export const approveBooking = async (id: number | string): Promise<Booking> => {
   const res = await axiosClient.put<Booking>(`/bookings/${id}/approve`);
   return res.data;
 };
 
-// 3. Admin từ chối duyệt hoặc Hủy đơn (Chuyển trạng thái sang CANCELLED)
 export const rejectBooking = async (id: number | string): Promise<Booking> => {
   const res = await axiosClient.put<Booking>(`/bookings/${id}/cancel`);
   return res.data;
+};
+
+// ─── Search Utilities (Cities & Capacities) ──────────────────────────────────
+export const fetchActiveCities = async (): Promise<string[]> => {
+  const res = await axiosClient.get<string[]>("/search-utilities/cities");
+  return res.data || [];
+};
+
+export const fetchRoomCapacities = async (): Promise<string[]> => {
+  const res = await axiosClient.get<string[]>("/search-utilities/capacities");
+  return res.data || [];
 };

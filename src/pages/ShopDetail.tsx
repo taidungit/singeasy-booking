@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MapPin, Clock, Phone, Star, ArrowLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { fetchShopById, fetchRoomsByShop, fetchReviews } from "@/services/api";
+import { fetchShopById, fetchRoomsByShop, getReviewsByShop } from "@/services/api";
 import type { Shop, Room, Review } from "@/services/api";
 import RoomCard from "@/components/shop/RoomCard";
 import ReviewList from "@/components/shop/ReviewList";
@@ -30,14 +30,16 @@ useEffect(() => {
       if (!id) return;
       try {
         setIsLoading(true);
-        // Chạy song song API Shop và Rooms từ Backend
-        const [shopRes, roomsRes] = await Promise.all([
-          axiosClient.get<Shop>(`/shops/${id}`),
-          axiosClient.get<Room[]>(`/shops/${id}/rooms`),
+        
+        const [shopData, roomsData, reviewsData] = await Promise.all([
+          fetchShopById(id),
+          fetchRoomsByShop(id),
+          getReviewsByShop(id), // Gọi endpoint mới /api/v1/reviews/shop/{shopId}
         ]);
 
-        setShop(shopRes.data);
-        setRooms(Array.isArray(roomsRes.data) ? roomsRes.data : []);
+        setShop(shopData);
+        setRooms(Array.isArray(roomsData) ? roomsData : []);
+        setReviews(Array.isArray(reviewsData) ? reviewsData : []); // Nạp dữ liệu vào state reviews thành công
       } catch (error) {
         console.error("Error fetching shop details:", error);
       } finally {

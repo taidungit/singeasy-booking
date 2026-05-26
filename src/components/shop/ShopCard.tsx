@@ -19,9 +19,13 @@ const ShopCard = ({ shop, variant = "default" }: ShopCardProps) => {
           className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]"
         />
         {/* Rating badge */}
-        <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm">
+        {/* <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm">
           <Star className="w-3 h-3 fill-gold text-gold" />
-          {shop.rating}
+          <span className="text-yellow-500">{shop.rating}</span>
+        </div> */}
+        <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-white/10 shadow-lg">
+          <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+          <span className="text-yellow-400 font-bold">{shop.rating}</span>
         </div>
         {/* Tags */}
         <div className="absolute bottom-3 left-3 flex gap-1.5 flex-wrap">

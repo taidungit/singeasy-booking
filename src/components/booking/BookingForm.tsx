@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, Clock, Minus, Plus, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,22 @@ const BookingForm = () => {
 
   const today = new Date().toISOString().split("T")[0];
 
+  // 🟢 Hàm kiểm tra xem khung giờ đã trôi qua so với giờ hiện tại chưa (Chỉ check nếu là ngày hôm nay)
+  const isTimeSlotDisabled = useCallback((timeSlot: string): boolean => {
+    if (!state.date) return false;
+
+    // So sánh ngày được chọn với ngày hôm nay hệ thống
+    const isToday = state.date === today;
+    if (!isToday) return false;
+
+    // Trích xuất giờ hiện tại và giờ của slot (Ví dụ: "14:00" -> 14)
+    const currentHour = new Date().getHours();
+    const [slotHour] = timeSlot.split(":").map(Number);
+
+    // Nếu giờ của ô đặt nhỏ hơn hoặc bằng giờ hiện hành thì disable
+    return slotHour <= currentHour;
+  }, [state.date, today]);
+
   // Tự động set ngày đặt mặc định là hôm nay nếu state.date đang trống
   useEffect(() => {
     if (!state.date) {
@@ -28,55 +44,70 @@ const BookingForm = () => {
     }
   }, [state.date, dispatch, today]);
 
+  // 🟢 Tự động chỉnh lại startTime nếu vô tình dính vào khung giờ đã qua khi chọn ngày hôm nay
+  useEffect(() => {
+    if (state.date === today && state.startTime) {
+      if (isTimeSlotDisabled(state.startTime)) {
+        // Tìm khung giờ trống hợp lệ đầu tiên còn lại trong ngày
+        const firstAvailableSlot = TIME_SLOTS.find(t => !isTimeSlotDisabled(t));
+        if (firstAvailableSlot) {
+          dispatch({ type: "SET_TIME", payload: firstAvailableSlot });
+        } else {
+          // Trường hợp đã quá 23h đêm, không còn slot nào đặt được trong ngày
+          dispatch({ type: "SET_TIME", payload: "" });
+        }
+      }
+    }
+  }, [state.date, today, isTimeSlotDisabled, state.startTime, dispatch]);
+
   const handleHoursChange = (delta: number) => {
     const next = Math.max(1, Math.min(8, state.hours + delta));
     dispatch({ type: "SET_HOURS", payload: next });
   };
 
-const handleSubmit = async () => {
-  if (!authState.isAuthenticated) {
-    navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
-    return;
-  }
-  
-  if (!state.selectedRoom || !state.date || !state.startTime) {
-    toast({ 
-      title: "Missing details", 
-      description: "Please fill in all booking fields.", 
-      variant: "destructive" 
-    });
-    return;
-  }
-
-  setIsLoading(true);
-  try {
-    // Không cần dùng "as any", không sợ ESLint bắt lỗi, code chuẩn chỉ điểm mười
-    await createBooking({
-      roomId: state.selectedRoom.id, 
-      bookingDate: state.date,       // Đã khớp hoàn chỉnh với interface BookingReqDto
-      startTime: state.startTime,
-      duration: state.hours,
-      serviceFee: 0.0
-    });
-
-    dispatch({ type: "CLEAR_BOOKING" });
-    navigate("/dashboard");
+  const handleSubmit = async () => {
+    if (!authState.isAuthenticated) {
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
     
-    toast({ 
-      title: "Booking confirmed! 🎉", 
-      description: "Check your dashboard for details." 
-    });
-  } catch (error) {
-    console.error("Booking submit error:", error);
-    toast({ 
-      title: "Booking failed", 
-      description: "This room might have been booked or connection lost. Please try again.", 
-      variant: "destructive" 
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
+    if (!state.selectedRoom || !state.date || !state.startTime) {
+      toast({ 
+        title: "Missing details", 
+        description: "Please fill in all booking fields.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await createBooking({
+        roomId: state.selectedRoom.id, 
+        bookingDate: state.date,       
+        startTime: state.startTime,
+        duration: state.hours,
+        serviceFee: 0.0
+      });
+
+      dispatch({ type: "CLEAR_BOOKING" });
+      navigate("/dashboard");
+      
+      toast({ 
+        title: "Booking confirmed! 🎉", 
+        description: "Check your dashboard for details." 
+      });
+    } catch (error) {
+      console.error("Booking submit error:", error);
+      toast({ 
+        title: "Booking failed", 
+        description: "This room might have been booked or connection lost. Please try again.", 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -105,9 +136,24 @@ const handleSubmit = async () => {
             onChange={(e) => dispatch({ type: "SET_TIME", payload: e.target.value })}
             className="flex-1 text-sm bg-transparent focus:outline-none text-foreground font-semibold cursor-pointer"
           >
-            {TIME_SLOTS.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
+            {/* Trường hợp đặc biệt khi hết giờ đặt trong ngày */}
+            {state.date === today && !TIME_SLOTS.some(t => !isTimeSlotDisabled(t)) && (
+              <option value="">No slots available today</option>
+            )}
+            
+            {TIME_SLOTS.map((t) => {
+              const disabled = isTimeSlotDisabled(t);
+              return (
+                <option 
+                  key={t} 
+                  value={t} 
+                  disabled={disabled}
+                  className={disabled ? "text-slate-400 bg-slate-100 line-through" : "text-foreground font-medium"}
+                >
+                  {t} {disabled ? "(Past)" : ""}
+                </option>
+              );
+            })}
           </select>
         </div>
       </div>
@@ -164,7 +210,7 @@ const handleSubmit = async () => {
       <Button
         className="w-full gap-2 py-6 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-100 active:scale-[0.98] transition-all"
         onClick={handleSubmit}
-        disabled={isLoading || !state.selectedRoom}
+        disabled={isLoading || !state.selectedRoom || !state.startTime}
       >
         {isLoading ? (
           <>

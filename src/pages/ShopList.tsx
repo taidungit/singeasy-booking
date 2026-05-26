@@ -3,8 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { X } from "lucide-react";
 import ShopCard from "@/components/shop/ShopCard";
 import SearchBar from "@/components/booking/SearchBar";
-import axiosClient from "@/services/axiosClient"; // Sử dụng client đã cấu hình
-import type { Shop } from "@/services/api";
+import { fetchShops, fetchFilteredShops, type Shop } from "@/services/api"; // Import 2 hàm API riêng biệt
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -16,7 +15,7 @@ const SkeletonCard = () => (
   </div>
 );
 
-// Cập nhật khoảng giá VNĐ phù hợp với thị trường Karaoke Việt Nam
+// Khoảng giá VNĐ phù hợp với thị trường Karaoke Việt Nam
 const PRICE_RANGES = [
   { label: "Any price", min: 0, max: 9999999 },
   { label: "Under 150k/hr", min: 0, max: 150000 },
@@ -32,28 +31,37 @@ const ShopList = () => {
   const [priceRange, setPriceRange] = useState(0);
   const [sortBy, setSortBy] = useState<"rating" | "price_asc" | "price_desc">("rating");
 
+  // Đọc chính xác các param từ thanh URL (?q=...&city=...) do SearchBar đẩy lên
   const query = searchParams.get("q") ?? "";
-  const location = searchParams.get("location") ?? "all";
+  const city = searchParams.get("city") ?? "all";
 
   const loadShops = useCallback(async () => {
     setIsLoading(true);
     try {
       const range = PRICE_RANGES[priceRange];
-      
-      // Kết nối API thực tế từ Backend
-      const response = await axiosClient.get("/shops", {
-        params: {
+
+      // Kiểm tra xem người dùng có đang tương tác với bất kỳ bộ lọc nào không
+      const hasFilter = query.trim() !== "" || city !== "all" || minRating > 0 || priceRange > 0;
+
+      let responseData: Shop[] = [];
+
+      if (hasFilter) {
+        // 🟢 NẾU CÓ LỌC: Gọi API search nâng cao (/api/v1/shops/search)
+        responseData = await fetchFilteredShops({
           name: query || undefined,
-          address: location !== "all" ? location : undefined,
+          address: city !== "all" ? city : undefined,
           minRating: minRating || undefined,
           minPrice: range.min > 0 ? range.min : undefined,
           maxPrice: range.max < 9999999 ? range.max : undefined,
-        }
-      });
+        });
+      } else {
+        // 🔵 NẾU KHÔNG LỌC: Gọi API lấy tất cả mặc định (/api/v1/shops)
+        responseData = await fetchShops();
+      }
 
-      let results = Array.isArray(response.data) ? response.data : [];
+      let results = Array.isArray(responseData) ? responseData : [];
 
-      // Logic sắp xếp tại Client
+      // Logic sắp xếp (Sort) tại Client dựa trên state `sortBy`
       if (sortBy === "rating") results = [...results].sort((a, b) => (b.rating || 0) - (a.rating || 0));
       if (sortBy === "price_asc") results = [...results].sort((a, b) => a.minPricePerHour - b.minPricePerHour);
       if (sortBy === "price_desc") results = [...results].sort((a, b) => b.minPricePerHour - a.minPricePerHour);
@@ -65,7 +73,8 @@ const ShopList = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [query, location, minRating, priceRange, sortBy]);
+    // Theo dõi toàn bộ các biến lọc để trigger gọi lại API mỗi khi có thay đổi
+  }, [query, city, minRating, priceRange, sortBy]);
 
   useEffect(() => {
     loadShops();
@@ -75,7 +84,7 @@ const ShopList = () => {
     <div className="min-h-screen bg-background">
       {/* Sticky search + filter bar */}
       <div className="sticky top-16 z-30 bg-background border-b border-border shadow-sm">
-        <SearchBar variant="inline" initialQuery={query} initialLocation={location} />
+        <SearchBar variant="inline" initialQuery={query} initialLocation={city} />
         <div className="px-4 sm:px-6 py-3 flex items-center gap-3 overflow-x-auto no-scrollbar">
           <select
             value={sortBy}
@@ -125,8 +134,8 @@ const ShopList = () => {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-foreground">
             {isLoading ? "Searching..." : `${shops.length} venue${shops.length !== 1 ? "s" : ""} found`}
-            {location !== "all" && !isLoading && (
-              <span className="font-normal text-muted-foreground"> in {location}</span>
+            {city !== "all" && !isLoading && (
+              <span className="font-normal text-muted-foreground"> in {city}</span>
             )}
           </h1>
         </div>
