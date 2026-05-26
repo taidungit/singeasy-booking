@@ -18,9 +18,9 @@ const SkeletonCard = () => (
 // Khoảng giá VNĐ phù hợp với thị trường Karaoke Việt Nam
 const PRICE_RANGES = [
   { label: "Any price", min: 0, max: 9999999 },
-  { label: "Under 150k/hr", min: 0, max: 150000 },
-  { label: "150k – 300k/hr", min: 150000, max: 300000 },
-  { label: "Above 300k/hr", min: 300000, max: 9999999 },
+  { label: "Under 30$/hr", min: 0, max: 30 },
+  { label: "30$ – 50$/hr", min: 30, max: 50 },
+  { label: "Above 50$/hr", min: 50, max: 99999 },
 ];
 
 const ShopList = () => {
