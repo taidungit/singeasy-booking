@@ -1,12 +1,12 @@
 import { createContext, useContext, useReducer, ReactNode, useEffect } from "react";
-import axiosClient from "@/services/axiosClient"; // SỬ DỤNG AXIOS ĐÃ CẤU HÌNH SẴN (có interceptor tự động đính kèm token)
-
+import axiosClient from "@/services/axiosClient"; 
+import axios from "axios";
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  avatar?: string;
+  avatar?: string; // Khớp chuẩn trường dữ liệu chuỗi Base64
   role: string;
   phoneNumber?: string;
 }
@@ -46,7 +46,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
       return { user: null, isAuthenticated: false, isLoading: false, error: null };
     case "CLEAR_ERROR":
       return { ...state, error: null };
-    case "UPDATE_USER": // 🌟 THÊM CASE NÀY
+    case "UPDATE_USER":
       localStorage.setItem("user", JSON.stringify(action.payload));
       return { 
         ...state, 
@@ -74,10 +74,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isAuthenticated: false,
     isLoading: true,
     error: null,
-    
   });
 
-  // TỰ ĐỘNG KHÔI PHỤC USER KHI LOAD LẠI TRANG
+  // TỰ ĐỘNG KHÔI PHỤC USER KHI LOAD LẠI TRANG (F5)
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
     if (savedUser) {
@@ -96,51 +95,69 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     dispatch({ type: "AUTH_START" });
     try {
-      // Gửi đúng request tới AuthController của Backend
       const response = await axiosClient.post("/auth/login", {
-        username: email, // Backend của bạn dùng LoginDTO có trường username
+        username: email, 
         password: password
       });
 
+      // 💥 LƯU Ý: Đảm bảo Backend JSON trả về có chứa trường user.avatar
       const { access_token, user } = response.data;
 
-      // Lưu token để các request sau dùng (như Postman)
-      localStorage.setItem("access_token", access_token);
-      localStorage.setItem("user", JSON.stringify(user));
+      // 🟢 PHÒNG THỦ: Nếu Backend lỡ quên không map avatar vào API Login, 
+      // ta thử bốc từ DB trả về qua thuộc tính avatar/hoặc fallback để tránh đè mất ảnh cũ.
+      const userWithAvatar: User = {
+        ...user,
+        avatar: user.avatar || undefined
+      };
 
-      dispatch({ type: "LOGIN_SUCCESS", payload: user });
+      localStorage.setItem("access_token", access_token);
+      localStorage.setItem("user", JSON.stringify(userWithAvatar));
+
+      dispatch({ type: "LOGIN_SUCCESS", payload: userWithAvatar });
     } catch (error) {
-      const msg = error.response?.data?.message || "Sai email hoặc mật khẩu!";
-      dispatch({ type: "AUTH_FAILURE", payload: msg });
-    }
+  let msg = "Wrong email or password. Please try again.";
+
+  if (axios.isAxiosError(error)) {
+    msg = error.response?.data?.message || msg;
+  } else if (error instanceof Error) {
+    msg = error.message;
+  }
+
+  dispatch({ type: "AUTH_FAILURE", payload: msg });
+}
   };
 
   const register = async (name: string, email: string, password: string) => {
     dispatch({ type: "AUTH_START" });
     try {
-      // Gửi request tới /auth/register
       await axiosClient.post("/auth/register", {
         name,
         email,
         password
       });
 
-      // Đăng ký xong có thể chuyển người dùng sang trang Login
-      // Hoặc tự động gọi hàm login() ở trên nếu muốn vào luôn
       dispatch({ type: "AUTH_READY" });
-      alert("Đăng ký thành công! Hãy đăng nhập.");
-    } catch (error) {
-      // Bắt lỗi "Email đã tồn tại" từ IdInvalidException của Backend
-      const msg = error.response?.data?.message || "Đăng ký thất bại.";
+      alert("Registration successful! Please log in.");
+    } catch (error: unknown) {
+      let msg = "Failed to register. Please try again.";
+
+      if (axios.isAxiosError(error)) {
+        msg = error.response?.data?.message || msg;
+      } else if (error instanceof Error) {
+        msg = error.message;
+      }
+
       dispatch({ type: "AUTH_FAILURE", payload: msg });
     }
   };
 
   const logout = () => dispatch({ type: "LOGOUT" });
   const clearError = () => dispatch({ type: "CLEAR_ERROR" });
+  
   const updateUser = (updatedUser: User) => {
     dispatch({ type: "UPDATE_USER", payload: updatedUser });
   };
+
   return (
     <AuthContext.Provider value={{ state, login, register, logout, clearError, updateUser }}>
       {children}

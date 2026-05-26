@@ -10,7 +10,8 @@ import {
   RefreshCw,
   User,
   Layers,
-  ChevronLeft 
+  ChevronLeft,
+  AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -38,6 +39,9 @@ const BookingManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [actionLoadingId, setActionLoadingId] = useState<string | number | null>(null);
 
+  // State kiểm soát hành động click bước 1
+  const [activeConfirmId, setActiveConfirmId] = useState<string | number | null>(null);
+
   const loadShopBookings = async () => {
     if (!shopId) return;
     setIsLoading(true);
@@ -56,7 +60,15 @@ const BookingManagement = () => {
     loadShopBookings();
   }, [shopId]);
 
+  // Tự động đóng trạng thái xác nhận sau 4 giây tĩnh lặng
+  useEffect(() => {
+    if (!activeConfirmId) return;
+    const timer = setTimeout(() => setActiveConfirmId(null), 4000);
+    return () => clearTimeout(timer);
+  }, [activeConfirmId]);
+
   const handleApprove = async (id: number | string) => {
+    setActiveConfirmId(null);
     setActionLoadingId(id);
     try {
       await approveBooking(id);
@@ -70,8 +82,8 @@ const BookingManagement = () => {
     }
   };
 
-  const handleReject = async (id: number | string) => {
-    if (!confirm("Are you sure you want to reject this booking?")) return;
+  const handleExecuteReject = async (id: number | string) => {
+    setActiveConfirmId(null);
     setActionLoadingId(id);
     try {
       await rejectBooking(id);
@@ -79,7 +91,7 @@ const BookingManagement = () => {
         prev.map((b) => (b.id === id ? { ...b, status: "CANCELLED" } : b))
       );
     } catch (error) {
-      console.error("Reject booking error:", error);
+      console.error("Execute reject/cancel error:", error);
     } finally {
       setActionLoadingId(null);
     }
@@ -94,12 +106,12 @@ const BookingManagement = () => {
   });
 
   return (
-    <div className="p-6 font-sans min-h-screen">
+    <div className="p-6 font-sans min-h-screen bg-slate-50/50">
       <div className="max-w-7xl mx-auto">
         
         {/* Top Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/admin/shops")}>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/admin/shops")} className="rounded-xl">
             <ChevronLeft />
           </Button>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
@@ -180,109 +192,144 @@ const BookingManagement = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm font-medium text-slate-700">
-                  {filteredBookings.map((booking) => (
-                    <tr key={booking.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                            <User className="w-4 h-4" />
+                  {filteredBookings.map((booking) => {
+                    const isConfirming = activeConfirmId === booking.id;
+
+                    return (
+                      <tr key={booking.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                              <User className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-900 leading-tight">{booking.userName || "Guest User"}</p>
+                              <p className="text-xs text-slate-400 font-semibold mt-0.5">{booking.userEmail}</p>
+                              <span className="inline-block text-[11px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded mt-1">
+                                🏢 {booking.shopName || "SingEasy Venue"}
+                              </span>
+                            </div>
                           </div>
+                        </td>
+
+                        <td className="py-4 px-6">
                           <div>
-                            <p className="font-bold text-slate-900 leading-tight">{booking.userName || "Guest User"}</p>
-                            <p className="text-xs text-slate-400 font-semibold mt-0.5">{booking.userEmail}</p>
-                            <span className="inline-block text-[11px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded mt-1">
-                              🏢 {booking.shopName || "SingEasy Venue"}
-                            </span>
+                            <div className="flex items-center gap-1.5 text-slate-900 font-bold mb-1">
+                              <Layers className="w-3.5 h-3.5 text-slate-400" />
+                              {booking.roomName}
+                            </div>
+                            <div className="flex flex-col gap-0.5 text-xs font-semibold text-slate-500">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                {booking.bookingDate}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                {booking.startTime?.substring(0, 5)} · {booking.duration} {booking.duration === 1 ? "hour" : "hours"}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="py-4 px-6">
-                        <div>
-                          <div className="flex items-center gap-1.5 text-slate-900 font-bold mb-1">
-                            <Layers className="w-3.5 h-3.5 text-slate-400" />
-                            {booking.roomName}
-                          </div>
-                          <div className="flex flex-col gap-0.5 text-xs font-semibold text-slate-500">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                              {booking.bookingDate}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3.5 h-3.5 text-slate-400" />
-                              {booking.startTime?.substring(0, 5)} · {booking.duration} {booking.duration === 1 ? "hour" : "hours"}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
+                        <td className="py-4 px-6">
+                          <p className="text-base font-black text-slate-900">${booking.totalAmount}</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase">Settled</p>
+                        </td>
 
-                      <td className="py-4 px-6">
-                        <p className="text-base font-black text-slate-900">${booking.totalAmount}</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">Settled</p>
-                      </td>
+                        <td className="py-4 px-6">
+                          <span className={`text-xs font-bold px-3 py-1 border rounded-full ${statusStyles[booking.status] || statusStyles.PENDING}`}>
+                            {booking.status}
+                          </span>
+                        </td>
 
-                      <td className="py-4 px-6">
-                        <span className={`text-xs font-bold px-3 py-1 border rounded-full ${statusStyles[booking.status] || statusStyles.PENDING}`}>
-                          {booking.status}
-                        </span>
-                      </td>
+                        {/* 🟢 KHU VỰC ACTIONS TRƯỢT 2 BƯỚC ĐÃ ĐƯỢC CHUẨN HÓA VĂN PHONG TEXT */}
+                        <td className="py-4 px-6 text-right overflow-hidden">
+                          <div className="flex justify-end items-center gap-2 min-h-[32px]">
+                            
+                            {/* TRẠNG THÁI 1: CHƯA KÍCH HOẠT XÁC NHẬN */}
+                            {!isConfirming && booking.status === "PENDING" && (
+                              <div className="flex items-center gap-2 transition-all duration-300 transform translate-x-0">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleApprove(booking.id)}
+                                  disabled={actionLoadingId !== null}
+                                  className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold gap-1 rounded-xl h-8 px-3 text-xs shadow-none"
+                                >
+                                  {actionLoadingId === booking.id ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                  )}
+                                  Approve
+                                </Button>
 
-                      {/* 💡 CỘT ACTIONS ĐÃ ĐƯỢC THAY ĐỔI STYLE NỔI BẬT, RÕ RÀNG */}
-                      <td className="py-4 px-6 text-right">
-                        <div className="flex justify-end items-center gap-2">
-                          {booking.status === "PENDING" ? (
-                            <>
-                              {/* Nút Duyệt: Nền xanh lá nhạt, chữ xanh lá đậm */}
+                                <Button
+                                  size="sm"
+                                  onClick={() => setActiveConfirmId(booking.id)}
+                                  disabled={actionLoadingId !== null}
+                                  className="bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 font-bold gap-1 rounded-xl h-8 px-3 text-xs shadow-none"
+                                >
+                                  <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                                  Reject
+                                </Button>
+                              </div>
+                            )}
+
+                            {!isConfirming && booking.status === "CONFIRMED" && (
                               <Button
                                 size="sm"
-                                title="Approve Reservation"
-                                onClick={() => handleApprove(booking.id)}
+                                onClick={() => setActiveConfirmId(booking.id)}
                                 disabled={actionLoadingId !== null}
-                                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold gap-1 rounded-xl h-8 px-3 text-xs shadow-none"
-                              >
-                                {actionLoadingId === booking.id ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                )}
-                                Approve
-                              </Button>
-
-                              {/* Nút Từ chối: Nền đỏ nhạt, chữ đỏ đậm */}
-                              <Button
-                                size="sm"
-                                title="Reject Reservation"
-                                onClick={() => handleReject(booking.id)}
-                                disabled={actionLoadingId !== null}
-                                className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold gap-1 rounded-xl h-8 px-3 text-xs shadow-none"
-                              >
-                                <XCircle className="w-3.5 h-3.5 text-rose-600" />
-                                Reject
-                              </Button>
-                            </>
-                          ) : (
-                            booking.status === "CONFIRMED" && (
-                              /* Nút Hủy: Nền xám nhạt */
-                              <Button
-                                size="sm"
-                                title="Cancel Active Session"
-                                onClick={() => handleReject(booking.id)}
-                                disabled={actionLoadingId !== null}
-                                className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-bold rounded-xl h-8 px-3 text-xs shadow-none"
+                                className="bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 font-bold rounded-xl h-8 px-3 text-xs shadow-none transition-all duration-300 transform translate-x-0"
                               >
                                 Cancel Session
                               </Button>
-                            )
-                          )}
-                          {booking.status === "CANCELLED" && (
-                            <span className="text-xs font-semibold text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl">
-                              Archived
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            )}
+
+                            {/* TRẠNG THÁI 2: ĐÃ CLICK BƯỚC 1 -> TRƯỢT DÒNG HỎI TINH TẾ */}
+                            {isConfirming && (
+                              <div className="flex items-center gap-2 animate-in slide-in-from-right-4 duration-200 ease-out">
+                                <span className="text-xs text-slate-400 font-semibold mr-1 flex items-center gap-1 select-none">
+                                  <AlertCircle className="w-3.5 h-3.5 text-slate-400" />
+                                  {booking.status === "CONFIRMED" ? "Cancel session?" : "Reject request?"}
+                                </span>
+                                
+                                {/* Nút Hủy Lệnh: Giữ lại, không xóa */}
+                                <Button
+                                  size="sm"
+                                  onClick={() => setActiveConfirmId(null)}
+                                  className="bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 font-bold rounded-xl h-8 px-2.5 text-xs shadow-none"
+                                >
+                                  No, Keep
+                                </Button>
+
+                                {/* Nút Xác Thực Hành Động Thật Sự */}
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleExecuteReject(booking.id)}
+                                  className="bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl h-8 px-3 text-xs shadow-none border-none"
+                                >
+                                  {actionLoadingId === booking.id ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : booking.status === "CONFIRMED" ? (
+                                    "Yes, Cancel"
+                                  ) : (
+                                    "Yes, Reject"
+                                  )}
+                                </Button>
+                              </div>
+                            )}
+
+                            {booking.status === "CANCELLED" && (
+                              <span className="text-xs font-semibold text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl">
+                                Archived
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
 
                   {filteredBookings.length === 0 && (
                     <tr>

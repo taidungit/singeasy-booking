@@ -6,6 +6,7 @@ import { useBooking } from "@/context/BookingContext";
 import { useAuth } from "@/context/AuthContext";
 import { createBooking, fetchOccupiedSlots } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
 
 const TIME_SLOTS = [
   "12:00", "13:00", "14:00", "15:00", "16:00",
@@ -19,9 +20,20 @@ const BookingForm = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const today = new Date().toISOString().split("T")[0];
+  // ─── XỬ LÝ CHẶN BIÊN NGÀY CHUẨN MÚI GIỜ LOCAL (ÉP GIỜ VIỆT NAM) ─────────────────
+  const formatLocalDate = (dateObj: Date) => {
+    const offset = dateObj.getTimezoneOffset();
+    const localDate = new Date(dateObj.getTime() - (offset * 60 * 1000));
+    return localDate.toISOString().split("T")[0];
+  };
 
-  // 🟢 1. Hàm check va chạm lịch động dựa vào danh sách bận thu được từ Spring Boot
+  const today = formatLocalDate(new Date());
+  
+  const tomorrowObj = new Date();
+  tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+  const tomorrow = formatLocalDate(tomorrowObj);
+
+  // 🟢 1. Cập nhật thuật toán check va chạm khớp điểm biên (Không bị chồng lấn 20:00)
   const checkTimeCollision = useCallback((startStr: string, durationHours: number): boolean => {
     if (!startStr || !state.occupiedSlots || state.occupiedSlots.length === 0) return false;
 
@@ -30,10 +42,12 @@ const BookingForm = () => {
 
     for (const slot of state.occupiedSlots) {
       const slotStart = Number(slot.startTime.split(":")[0]);
-      const slotEnd = Number(slot.endTime.split(":")[0]);
+      const slotEnd = slot.endTime === "24:00" ? 24 : Number(slot.endTime.split(":")[0]);
 
-      // Thuật toán so khớp khoảng Overlap: (Start1 < End2 VÀ End1 > Start2)
-      if (startHour < slotEnd && endHour > slotStart) {
+      // Thuật toán Overlap chặt chẽ loại trừ điểm biên
+      const isOverlapping = !(endHour <= slotStart || startHour >= slotEnd);
+
+      if (isOverlapping) {
         return true; 
       }
     }
@@ -73,14 +87,29 @@ const BookingForm = () => {
         console.error("Failed to load occupied slots:", err);
       }
     };
+    
     loadRoomSchedule();
+
+    // Logic dọn dẹp mảng bận cũ khi nhảy tab ngày để tránh mờ oan
+    return () => {
+      dispatch({ type: "SET_OCCUPIED_SLOTS", payload: [] });
+    };
   }, [state.selectedRoom?.id, state.date, dispatch]);
 
-  // 🟢 4. Tự động kiểm tra điều chỉnh lại StartTime hợp lệ nếu dính slot bận/quá giờ
+  // 🟢 4. TỰ ĐỘNG CẬP NHẬT: Ghim mốc giờ trống đầu tiên nếu StartTime trống hoặc dính slot bận
   useEffect(() => {
-    if (state.startTime && isTimeSlotDisabled(state.startTime)) {
+    if (!state.date) return;
+
+    // Nếu không có startTime HOẶC mốc giờ đang chọn nằm trong danh sách không khả dụng
+    if (!state.startTime || isTimeSlotDisabled(state.startTime)) {
       const firstAvailableSlot = TIME_SLOTS.find(t => !isTimeSlotDisabled(t));
-      dispatch({ type: "SET_TIME", payload: firstAvailableSlot || "" });
+      
+      if (firstAvailableSlot && firstAvailableSlot !== state.startTime) {
+        dispatch({ type: "SET_TIME", payload: firstAvailableSlot });
+      } else if (!firstAvailableSlot && state.startTime !== "") {
+        // Trường hợp ngày đã kín hoàn toàn lịch thật sự, reset về rỗng
+        dispatch({ type: "SET_TIME", payload: "" });
+      }
     }
   }, [state.date, isTimeSlotDisabled, state.startTime, dispatch]);
 
@@ -88,7 +117,6 @@ const BookingForm = () => {
   useEffect(() => {
     if (state.startTime && state.hours > 1) {
       if (checkTimeCollision(state.startTime, state.hours)) {
-        // Thu hẹp thời lượng về mức tối đa có thể cho phép
         let maxAvailableHours = 1;
         while (maxAvailableHours < 8 && !checkTimeCollision(state.startTime, maxAvailableHours + 1)) {
           maxAvailableHours++;
@@ -135,13 +163,20 @@ const BookingForm = () => {
       toast({ title: "Booking confirmed! 🎉", description: "Check your dashboard for details." });
     } catch (error) {
       console.error("Booking submit error:", error);
-      toast({ title: "Booking failed", description: "This room might have been booked. Please try again.", variant: "destructive" });
+      let errorMsg = "This room might have been booked. Please try again.";
+      if (axios.isAxiosError(error)) {
+        errorMsg = error.response?.data?.message || errorMsg;
+      }
+      toast({ title: "Booking failed", description: errorMsg, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
   };
 
   const isCollisionDetected = checkTimeCollision(state.startTime, state.hours);
+  
+  // 🟢 SỬA TẠI ĐÂY: Đảm bảo việc check full ngày chỉ chạy khi mảng occupiedSlots đã nạp hoặc kiểm tra chính xác mảng TIME_SLOTS
+  const isCurrentDayFull = !TIME_SLOTS.some(t => !isTimeSlotDisabled(t));
 
   return (
     <div className="space-y-4">
@@ -153,6 +188,7 @@ const BookingForm = () => {
           <input
             type="date"
             min={today}
+            max={tomorrow} 
             value={state.date}
             onChange={(e) => dispatch({ type: "SET_DATE", payload: e.target.value })}
             className="flex-1 text-sm bg-transparent focus:outline-none text-foreground font-semibold"
@@ -170,7 +206,7 @@ const BookingForm = () => {
             onChange={(e) => dispatch({ type: "SET_TIME", payload: e.target.value })}
             className="flex-1 text-sm bg-transparent focus:outline-none text-foreground font-semibold cursor-pointer"
           >
-            {!TIME_SLOTS.some(t => !isTimeSlotDisabled(t)) && (
+            {isCurrentDayFull && (
               <option value="">No slots available for this date</option>
             )}
             
@@ -202,7 +238,7 @@ const BookingForm = () => {
             <button
               type="button"
               onClick={() => handleHoursChange(-1)}
-              disabled={state.hours <= 1}
+              disabled={state.hours <= 1 || isCurrentDayFull}
               className="w-8 h-8 rounded-full border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 transition-all shadow-sm"
             >
               <Minus className="w-3.5 h-3.5 text-slate-600" />
@@ -211,8 +247,7 @@ const BookingForm = () => {
             <button
               type="button"
               onClick={() => handleHoursChange(1)}
-              // 🟢 CHẶN NÚT CỘNG: Nếu tăng thêm 1 giờ tiếp theo mà đâm sầm vào lịch bận của người khác thì disable nút cộng
-              disabled={state.hours >= 8 || !state.startTime || checkTimeCollision(state.startTime, state.hours + 1)}
+              disabled={state.hours >= 8 || !state.startTime || isCurrentDayFull || checkTimeCollision(state.startTime, state.hours + 1)}
               className="w-8 h-8 rounded-full border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 transition-all shadow-sm"
             >
               <Plus className="w-3.5 h-3.5 text-slate-600" />
@@ -243,16 +278,22 @@ const BookingForm = () => {
       {/* Submit Button */}
       <Button
         className={`w-full gap-2 py-6 text-base font-bold text-white rounded-xl shadow-md active:scale-[0.98] transition-all ${
-          isCollisionDetected ? "bg-amber-600 hover:bg-amber-700 shadow-amber-100" : "bg-blue-600 hover:bg-blue-700 shadow-blue-100"
+          isCurrentDayFull
+            ? "bg-slate-400 cursor-not-allowed shadow-none" 
+            : isCollisionDetected 
+              ? "bg-amber-600 hover:bg-amber-700 shadow-amber-100" 
+              : "bg-blue-600 hover:bg-blue-700 shadow-blue-100"
         }`}
         onClick={handleSubmit}
-        disabled={isLoading || !state.selectedRoom || !state.startTime || isCollisionDetected}
+        disabled={isLoading || !state.selectedRoom || !state.startTime || isCollisionDetected || isCurrentDayFull}
       >
         {isLoading ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin" />
             Confirming booking...
           </>
+        ) : isCurrentDayFull ? (
+          "Fully Booked"
         ) : isCollisionDetected ? (
           "Time Slot Conflicting"
         ) : (

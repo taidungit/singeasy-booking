@@ -1,5 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import logo from "@/assets/royal-logo.avif";
 import { 
   LayoutDashboard, 
   Store, 
@@ -21,11 +22,10 @@ import { Button } from "@/components/ui/button";
 
 const AdminLayout = () => {
   const { state, logout } = useAuth();
-  const { user } = state; // Lấy thông tin admin đang đăng nhập từ context
+  const { user } = state; 
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hàm kiểm tra xem Link có đang được active không để đổi màu (Hỗ trợ tốt các route con)
   const isActive = (path: string) => {
     if (path === '/admin') {
       return location.pathname === '/admin';
@@ -39,24 +39,19 @@ const AdminLayout = () => {
     { name: 'User Management', path: '/admin/users', icon: <Users size={20} /> },
   ];
 
-  // 💡 HÀM GENERATE BREADCRUMB TƯƠNG TÁC ĐƯỢC ĐỂ CLICK BACK VỀ TRANG TRƯỚC
-  // Biến cấu trúc như "/admin/shops/1/bookings" thành các nút bấm tương tác được
   const renderBreadcrumbs = () => {
     const paths = location.pathname.split('/').filter(Boolean);
     let currentPath = '';
 
     return (
-      <div className="flex items-center gap-1.5 text-sm text-slate-500 font-medium">
+      <div className="flex items-center gap-1.5 text-sm text-slate-500 font-medium select-none">
         <Link to="/admin" className="hover:text-slate-900 transition-colors">Administration</Link>
         {paths.map((path, index) => {
-          if (path === 'admin') return null; // Bỏ qua chữ admin đầu tiên vì đã có nút phía trước
+          if (path === 'admin') return null; 
           currentPath += `/${path}`;
           
-          // Kiểm tra xem đoạn đường dẫn này có phải là ID (số) không, nếu là ID thì hiển thị đẹp hơn
           const isId = !isNaN(Number(path));
           const displayName = isId ? `#${path}` : path.replace(/-/g, ' ');
-
-          // Nếu là phần tử cuối cùng thì không cho click (đang đứng ở đó)
           const isLast = index === paths.length - 1;
 
           return (
@@ -66,7 +61,7 @@ const AdminLayout = () => {
                 <span className="text-slate-900 font-semibold capitalize">{displayName}</span>
               ) : (
                 <Link 
-                  to={index === 1 ? `/admin/${path}` : `/admin/shops`} // Tùy biến linh hoạt để back về trang quản lý cha
+                  to={index === 1 ? `/admin/${path}` : `/admin/shops`} 
                   className="hover:text-slate-900 transition-colors capitalize"
                 >
                   {displayName}
@@ -79,35 +74,55 @@ const AdminLayout = () => {
     );
   };
 
+  const scrollTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
-    <div className="flex min-h-screen bg-[#f8fafc]">
+    <div className="flex min-h-screen bg-[#f8fafc] font-sans antialiased">
+      
       {/* Sidebar */}
-      <aside className="w-64 bg-[#1e293b] text-slate-300 flex flex-col shadow-xl">
-        {/* Logo / Header Sidebar */}
-        <div className="p-6 flex items-center gap-3 border-b border-slate-700/50">
-          <div className="bg-blue-500 p-2 rounded-lg">
-            <Mic2 size={24} className="text-white" />
-          </div>
-          <span className="font-bold text-xl text-white tracking-tight">Royal</span>
+      <aside className="w-64 bg-[#1e293b] text-slate-300 flex flex-col shadow-xl shrink-0 z-10">
+        
+        {/* 🟢 KHỐI LOGO ĐÃ ĐƯỢC PHÓNG TO & CÂN ĐỐI LẠI ĐẸP MẮT */}
+        <div className="h-20 px-6 flex items-center border-b border-slate-700/40 bg-[#1a2332]/50">
+          <Link
+            to="/"
+            onClick={scrollTop}
+            className="flex items-center gap-3.5 group select-none outline-none"
+          >
+            {/* Tăng kích thước khung chứa ảnh từ w-9 h-9 lên w-12 h-12 */}
+            <div className="w-12 h-12 relative overflow-hidden rounded-xl border border-slate-600/40 bg-slate-900 shadow-md flex-shrink-0">
+              <img 
+                src={logo} 
+                alt="Royal Logo"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+            </div>
+            {/* Tăng cỡ chữ từ text-base/text-lg lên text-xl font-bold */}
+            <span className="font-bold text-xl tracking-tight text-white transition-colors duration-200 group-hover:text-blue-400">
+              Royal
+            </span>
+          </Link>
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 p-4 mt-4">
-          <ul className="space-y-2">
+        <nav className="flex-1 p-4 mt-2">
+          <ul className="space-y-1.5">
             {menuItems.map((item) => (
               <li key={item.path}>
                 <Link
                   to={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
                     isActive(item.path)
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
-                      : 'hover:bg-slate-800 hover:text-white'
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-900/30 font-semibold'
+                      : 'hover:bg-slate-800/60 hover:text-white font-medium'
                   }`}
                 >
                   <span className={`${isActive(item.path) ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>
                     {item.icon}
                   </span>
-                  <span className="font-medium">{item.name}</span>
+                  <span>{item.name}</span>
                 </Link>
               </li>
             ))}
@@ -115,10 +130,10 @@ const AdminLayout = () => {
         </nav>
 
         {/* Footer Sidebar / Logout */}
-        <div className="p-4 border-t border-slate-700/50">
+        <div className="p-4 border-t border-slate-700/40">
           <button
             onClick={logout}
-            className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 font-medium"
+            className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-slate-400 hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 font-semibold text-sm"
           >
             <LogOut size={20} />
             <span>Logout</span>
@@ -126,23 +141,23 @@ const AdminLayout = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Top Header */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm">
-          {/* 💡 ĐÃ CẬP NHẬT: Breadcrumbs có khả năng click để quay lại */}
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        
+        {/* Top Navbar */}
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm shrink-0">
           {renderBreadcrumbs()}
 
-          {/* 💡 ĐÃ SỬA: Khối thông tin admin đồng bộ ảnh, tên từ Context và tích hợp Dropdown y hệt Client */}
+          {/* User Information Profile Dropdown */}
           <div className="flex items-center gap-3">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-bold text-slate-900">{user?.name || "Admin"}</p>
-              <p className="text-xs text-slate-500">Admin</p>
+            <div className="text-right hidden sm:block select-none">
+              <p className="text-sm font-bold text-slate-900 leading-tight">{user?.name || "Admin"}</p>
+              <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Administrator</p>
             </div>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="h-10 w-10 rounded-full border-2 border-white bg-slate-200 shadow-sm overflow-hidden flex items-center justify-center hover:opacity-90 transition-all outline-none">
+                <button className="h-9 w-9 rounded-full border-2 border-slate-100 bg-slate-100 shadow-sm overflow-hidden flex items-center justify-center hover:border-blue-500 hover:shadow-md transition-all outline-none cursor-pointer">
                   {user?.avatar ? (
                     <img 
                       src={user.avatar} 
@@ -150,37 +165,37 @@ const AdminLayout = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="text-slate-700 text-sm font-bold uppercase">
+                    <span className="text-slate-700 text-xs font-black uppercase">
                       {user?.name ? user.name.charAt(0) : "A"}
                     </span>
                   )}
                 </button>
               </DropdownMenuTrigger>
               
-              <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-md mt-2">
+              <DropdownMenuContent align="end" className="w-52 rounded-xl shadow-xl mt-2 p-1.5 border border-slate-100 bg-white animate-in fade-in slide-in-from-top-2 duration-150">
                 <DropdownMenuItem 
                   onClick={() => navigate("/profile")} 
-                  className="cursor-pointer py-2 font-medium"
+                  className="cursor-pointer py-2 px-3 rounded-lg font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-900 text-sm"
                 >
-                  <UserIcon className="w-4 h-4 mr-2 text-slate-500" /> 
+                  <UserIcon className="w-4 h-4 mr-2.5 text-slate-400" /> 
                   Edit My Profile
                 </DropdownMenuItem>
                 
                 <DropdownMenuItem 
                   onClick={() => navigate("/")} 
-                  className="cursor-pointer py-2 font-medium"
+                  className="cursor-pointer py-2 px-3 rounded-lg font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-900 text-sm"
                 >
-                  <Mic2 className="w-4 h-4 mr-2 text-slate-500" /> 
+                  <Mic2 className="w-4 h-4 mr-2.5 text-slate-400" /> 
                   Go to Client Site
                 </DropdownMenuItem>
 
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="my-1 bg-slate-100" />
 
                 <DropdownMenuItem
                   onClick={logout}
-                  className="text-destructive cursor-pointer py-2 focus:bg-destructive/5 font-medium"
+                  className="text-red-600 cursor-pointer py-2 px-3 rounded-lg font-semibold focus:bg-red-50/60 focus:text-red-700 text-sm"
                 >
-                  <LogOut className="w-4 h-4 mr-2" />
+                  <LogOut className="w-4 h-4 mr-2.5" />
                   Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -188,7 +203,8 @@ const AdminLayout = () => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        {/* View Layout Outlet */}
+        <main className="flex-1 overflow-y-auto bg-slate-50/50">
           <div className="p-8 max-w-7xl mx-auto">
             <Outlet />
           </div>

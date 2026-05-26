@@ -5,7 +5,7 @@ import { useBooking } from "@/context/BookingContext";
 import { useNavigate } from "react-router-dom";
 
 interface RoomCardProps {
-  room: Room;
+  room: Room & { fullyBooked?: boolean }; // Thêm type bổ trợ nếu type Room cũ chưa định nghĩa trường này
   shopId: string;
   shopName: string;
 }
@@ -19,11 +19,11 @@ const RoomCard = ({ room, shopId, shopName }: RoomCardProps) => {
   const { dispatch } = useBooking();
   const navigate = useNavigate();
 
-  // 🟢 THAY ĐỔI QUAN TRỌNG: Xác định trạng thái rảnh dựa vào cờ kiểm tra kín lịch từ Backend
-  // Phòng chỉ bị coi là không thể đặt được nữa nếu nó đã bị Fully Booked
-  const isAvailable = !room.isFullyBooked;
+  // 🟢 ĐÃ SỬA: Đổi từ room.isFullyBooked sang room.fullyBooked để khớp đúng data JSON
+  const isAvailable = !room.fullyBooked;
 
   const handleBook = () => {
+    if (!isAvailable) return; // Bảo vệ đề phòng click cố
     dispatch({ type: "SET_ROOM", payload: room });
     dispatch({ type: "SET_SHOP", payload: { shopId, shopName } });
     navigate(`/booking?shopId=${shopId}&roomId=${room.id}`);
@@ -34,7 +34,7 @@ const RoomCard = ({ room, shopId, shopName }: RoomCardProps) => {
       className={`flex gap-4 p-4 rounded-2xl border border-border transition-all ${
         isAvailable 
           ? "hover:border-primary/50 hover:shadow-card bg-background" 
-          : "opacity-60 bg-muted/30 select-none" // Chỉ làm mờ giao diện khi phòng đã hết sạch slot trong ngày
+          : "opacity-60 bg-muted/30 select-none pointer-events-none" // Khóa luôn tương tác card khi full lịch 2 ngày
       }`}
     >
       {/* Image */}
@@ -54,7 +54,6 @@ const RoomCard = ({ room, shopId, shopName }: RoomCardProps) => {
           </div>
           <div className="text-right flex-shrink-0">
             <p className="text-xl font-bold text-foreground">
-              {/* Định dạng tiền tệ hiển thị đẹp mắt hơn nếu sau này cấu hình sang VNĐ */}
               ${room.pricePerHour}
             </p>
             <p className="text-xs text-muted-foreground">per hour</p>
@@ -90,14 +89,14 @@ const RoomCard = ({ room, shopId, shopName }: RoomCardProps) => {
           ) : (
             <>
               <XCircle className="w-3.5 h-3.5" />
-              Booked Out
+              Booked 
             </>
           )}
         </div>
         
         <Button
           size="sm"
-          disabled={!isAvailable} // Nút bấm tự động mở khóa nếu phòng còn khung giờ trống
+          disabled={!isAvailable} // Vô hiệu hóa nút bấm hoàn toàn
           onClick={handleBook}
           className={`text-xs font-bold rounded-xl px-4 py-2 transition-all ${
             isAvailable 
@@ -105,7 +104,7 @@ const RoomCard = ({ room, shopId, shopName }: RoomCardProps) => {
               : "bg-slate-200 text-slate-400 cursor-not-allowed"
           }`}
         >
-          {isAvailable ? "Book Room" : "Booked"}
+          {isAvailable ? "Book Room" : "Book Room"}
         </Button>
       </div>
     </div>
