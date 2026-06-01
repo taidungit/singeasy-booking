@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, Pencil, Hash, MapPin, Phone, 
-  Clock, Star, MessageSquare, Activity, Image as ImageIcon, Info
+  Clock, Star, MessageSquare, Activity, Image as ImageIcon, Info, Tag
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import axiosClient from '@/services/axiosClient';
-import { Shop } from '@/services/api'; // Import trực tiếp từ file api.ts của bạn
+import { Shop } from '@/services/api'; 
 import { AxiosResponse } from 'axios';
 import { toast } from 'sonner';
 
@@ -22,7 +22,6 @@ const AdminShopDetail = () => {
       try {
         setLoading(true);
         const res = await axiosClient.get<Shop>(`/shops/${id}`);
-        // Xử lý ép kiểu cho an toàn theo interceptor của bạn
         const data = (res as AxiosResponse<Shop>).data || (res as unknown as Shop);
         setShop(data);
       } catch (err) {
@@ -117,31 +116,58 @@ const AdminShopDetail = () => {
           </div>
         </div>
 
-        {/* Tags Section */}
-        <Card className="border-slate-200 shadow-none rounded-[24px]">
-          <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-            <CardTitle className="text-xs font-bold text-slate-400">COLLECTION: AMENITIES_JSON</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="flex flex-wrap gap-2">
-              {shop.amenities && shop.amenities.length > 0 ? (
-                shop.amenities.map((item) => (
-                  <code key={item} className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-semibold">
-                    "{item}"
-                  </code>
-                ))
-              ) : (
-                <span className="text-slate-300 text-xs italic font-mono">NULL_ARRAY</span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Cấu trúc Grid chia đôi hàng dưới cho cả Amenities và Labels */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Amenities Section */}
+          <Card className="border-slate-200 shadow-none rounded-[24px]">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+              <CardTitle className="text-xs font-bold text-slate-400 flex items-center gap-2">
+                COLLECTION: AMENITIES_JSON
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="flex flex-wrap gap-2">
+                {shop.amenities && shop.amenities.length > 0 ? (
+                  shop.amenities.map((item) => (
+                    <code key={item} className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-semibold">
+                      "{item}"
+                    </code>
+                  ))
+                ) : (
+                  <span className="text-slate-300 text-xs italic font-mono">NULL_ARRAY</span>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 🌟 THÊM MỚI: Labels Section */}
+          <Card className="border-slate-200 shadow-none rounded-[24px]">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+              <CardTitle className="text-xs font-bold text-slate-400 flex items-center gap-2">
+                <Tag size={12} /> COLLECTION: LABELS_JSON
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="flex flex-wrap gap-2">
+                {shop.labels && shop.labels.length > 0 ? (
+                  shop.labels.map((tag) => (
+                    <span key={tag} className="px-3 py-1.5 bg-blue-50 border border-blue-100 text-blue-600 rounded-full text-xs font-bold">
+                      {tag}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-slate-300 text-xs italic font-mono">NULL_ARRAY</span>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
       </div>
     </div>
   );
 };
 
-// Sub-component for clean data rendering
 const DataField = ({ label, value }: { label: string; value: string | number }) => (
   <div className="space-y-1.5">
     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</h4>

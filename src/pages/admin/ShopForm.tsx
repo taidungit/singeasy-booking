@@ -13,9 +13,6 @@ import axiosClient from "@/services/axiosClient";
 import { Shop } from "@/services/api";
 import { AxiosError, AxiosResponse } from "axios";
 
-// Labels remain static as per your previous logic
-const LABEL_OPTIONS = ["Budget", "Luxury", "Student", "Family", "Dating", "Trending"];
-
 const ShopForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -35,22 +32,30 @@ const ShopForm = () => {
     labels: [] as string[],
   });
 
-  const [amenityOptions, setAmenityOptions] = useState<string[]>([]); // Dynamic Amenities from BE
+  const [amenityOptions, setAmenityOptions] = useState<string[]>([]); // Dynamic Amenities từ BE
+  const [labelOptions, setLabelOptions] = useState<string[]>([]);     // ĐÃ CẬP NHẬT: Dynamic Labels từ BE
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // 1. FETCH MASTER DATA (AMENITIES) AND SHOP DETAIL
+  // 1. FETCH MASTER DATA (AMENITIES, LABELS) AND SHOP DETAIL
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         
-        // Fetch dynamic amenities from BE
-        const amenityRes = await axiosClient.get("/amenities");
+        // Fetch song song cả amenities và labels từ BE giúp tối ưu thời gian loading
+        const [amenityRes, labelRes] = await Promise.all([
+          axiosClient.get("/amenities"),
+          axiosClient.get("/labels")
+        ]);
+
         const amenities = (amenityRes as AxiosResponse<string[]>).data || amenityRes;
         setAmenityOptions(Array.isArray(amenities) ? amenities : []);
 
-        // If Edit mode, fetch Shop details
+        const labels = (labelRes as AxiosResponse<string[]>).data || labelRes;
+        setLabelOptions(Array.isArray(labels) ? labels : []);
+
+        // Nếu ở chế độ Edit, fetch thông tin chi tiết của Shop
         if (isEdit && id) {
           const res = await axiosClient.get<Shop>(`/shops/${id}`);
           const shopData = (res as AxiosResponse<Shop>).data;
@@ -102,6 +107,16 @@ const ShopForm = () => {
       amenities: prev.amenities.includes(item)
         ? prev.amenities.filter(i => i !== item)
         : [...prev.amenities, item]
+    }));
+  };
+
+  // ĐÃ BỔ SUNG: Hàm toggle cho Label cho code gọn gàng, đồng bộ
+  const handleToggleLabel = (tag: string) => {
+    setFormData(prev => ({
+      ...prev,
+      labels: prev.labels.includes(tag) 
+        ? prev.labels.filter(t => t !== tag) 
+        : [...prev.labels, tag]
     }));
   };
 
@@ -234,23 +249,23 @@ const ShopForm = () => {
                 <div className="space-y-3">
                   <Label className="flex items-center gap-2 font-semibold"><Tag size={16}/> Display Labels</Label>
                   <div className="flex flex-wrap gap-2">
-                    {LABEL_OPTIONS.map(tag => (
+                    {/* ĐÃ SỬA: Map qua labelOptions lấy từ BE thay vì LABEL_OPTIONS static */}
+                    {labelOptions.length > 0 ? labelOptions.map(tag => (
                       <button
                         key={tag}
                         type="button"
-                        onClick={() => setFormData(prev => ({
-                          ...prev,
-                          labels: prev.labels.includes(tag) ? prev.labels.filter(t => t !== tag) : [...prev.labels, tag]
-                        }))}
+                        onClick={() => handleToggleLabel(tag)}
                         className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
                           formData.labels.includes(tag) 
-                          ? "bg-blue-600 text-white border-blue-600 shadow-md" 
-                          : "bg-white text-slate-500 border-slate-200 hover:border-blue-400"
+                            ? "bg-blue-600 text-white border-blue-600 shadow-md" 
+                            : "bg-white text-slate-500 border-slate-200 hover:border-blue-400"
                         }`}
                       >
                         {tag}
                       </button>
-                    ))}
+                    )) : (
+                      <span className="text-xs text-slate-400">No labels found in database.</span>
+                    )}
                   </div>
                 </div>
 

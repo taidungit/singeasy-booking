@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom"; 
-import { Menu, X, LogOut, LayoutDashboard, History, PhoneCall, UserIcon } from "lucide-react";
+import { Menu, X, LogOut, LayoutDashboard, History, PhoneCall, UserIcon, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/royal-logo.avif";
@@ -17,11 +17,14 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
+  // 🌟 Kiểm tra xem user có quyền admin hay không
+  const isAdmin = state.isAuthenticated && state.user?.role === "ADMIN";
+
   const scrollTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // 🌟 Hàm helper định nghĩa style Active cho Desktop
+  // Hàm helper định nghĩa style Active cho Desktop
   const desktopLinkStyle = ({ isActive }: { isActive: boolean }) =>
     `text-sm font-bold transition-all relative py-1 flex items-center gap-1.5 ${
       isActive
@@ -29,7 +32,7 @@ const Navbar = () => {
         : "text-muted-foreground hover:text-slate-900 after:absolute after:bottom-[-20px] after:left-0 after:w-0 after:h-[2.5px] after:bg-blue-600 hover:after:w-full after:transition-all"
     }`;
 
-  // 🌟 Hàm helper định nghĩa style Active cho Mobile
+  // Hàm helper định nghĩa style Active cho Mobile
   const mobileLinkStyle = ({ isActive }: { isActive: boolean }) =>
     `block px-3 py-2 rounded-xl text-sm font-bold transition-colors ${
       isActive
@@ -84,7 +87,6 @@ const Navbar = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2 rounded-xl border-slate-200 hover:bg-slate-50 font-semibold shadow-sm py-5">
                     
-                    {/* 🌟 ĐÃ SỬA: Khối hiển thị Avatar thông minh nhận diện Base64 */}
                     <div className="w-7 h-7 rounded-full flex items-center justify-center shadow-sm overflow-hidden bg-amber-500 shrink-0">
                       {state.user?.avatar ? (
                         <img 
@@ -106,6 +108,18 @@ const Navbar = () => {
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-md mt-1">
+                  
+                  {/* 🌟 NÚT ĐẾN TRANG QUẢN TRỊ (CHỈ HIỂN THỊ KHI LÀ ADMIN) */}
+                  {isAdmin && (
+                    <DropdownMenuItem 
+                      onClick={() => navigate("/admin")} 
+                      className="cursor-pointer py-2 font-bold text-blue-600 focus:text-blue-700 focus:bg-blue-50/80"
+                    >
+                      <ShieldCheck className="w-4 h-4 mr-2 text-blue-600" /> 
+                      Go to Admin Site
+                    </DropdownMenuItem>
+                  )}
+
                   <DropdownMenuItem 
                     onClick={() => navigate("/profile")} 
                     className="cursor-pointer py-2 font-medium"
@@ -195,7 +209,18 @@ const Navbar = () => {
 
             {state.isAuthenticated ? (
               <>
-                {/* 🌟 ĐÃ SỬA: Thêm nút My Profile cho menu mobile */}
+                {/* ĐỒNG BỘ: Hiện cả lối tắt Admin ở menu mobile cho tiện lợi */}
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    onClick={() => setIsOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-sm font-bold text-blue-600 hover:bg-blue-50 transition-colors"
+                  >
+                    <ShieldCheck className="inline w-4 h-4 mr-2" />
+                    Admin Panel
+                  </Link>
+                )}
+
                 <Link
                   to="/profile"
                   onClick={() => setIsOpen(false)}
