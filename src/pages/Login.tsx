@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
+import logo from "@/assets/royal-logo.avif";
 
 const Login = () => {
   const { state, login, clearError } = useAuth();
@@ -35,11 +36,13 @@ const Login = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            {/* Thay đổi logo từ Echo thành SingEasy (E -> S) */}
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <span className="text-primary-foreground font-bold">S</span>
-            </div>
-            <span className="font-bold text-xl text-foreground">SingEasy</span>
+                     <div className="w-16 h-16 relative overflow-hidden rounded-xl border border-slate-600/40 bg-slate-900 shadow-md flex-shrink-0">
+            <img 
+              src={logo} 
+              alt="Royal Logo"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          </div>
           </Link>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Welcome back</h1>
           <p className="text-muted-foreground text-sm mt-1">Sign in to continue booking karaoke rooms</p>

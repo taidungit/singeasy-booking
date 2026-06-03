@@ -115,16 +115,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       dispatch({ type: "LOGIN_SUCCESS", payload: userWithAvatar });
     } catch (error) {
-  let msg = "Wrong email or password. Please try again.";
+      let msg = "Wrong email or password. Please try again.";
 
-  if (axios.isAxiosError(error)) {
-    msg = error.response?.data?.message || msg;
-  } else if (error instanceof Error) {
-    msg = error.message;
-  }
+      if (axios.isAxiosError(error)) {
+        msg = error.response?.data?.message || msg;
+      } else if (error instanceof Error) {
+        msg = error.message;
+      }
 
-  dispatch({ type: "AUTH_FAILURE", payload: msg });
-}
+      dispatch({ type: "AUTH_FAILURE", payload: msg });
+    }
   };
 
   const register = async (name: string, email: string, password: string) => {
@@ -137,7 +137,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       dispatch({ type: "AUTH_READY" });
-      alert("Registration successful! Please log in.");
+      
+      // ✅ ĐÃ XOÁ LỆNH ALERT XẤU XÍ CỦA TRÌNH DUYỆT Ở ĐÂY
+      
     } catch (error: unknown) {
       let msg = "Failed to register. Please try again.";
 
@@ -148,6 +150,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       dispatch({ type: "AUTH_FAILURE", payload: msg });
+      
+      // Bắn ngược lỗi ra ngoài để khối try-catch trong Register.tsx bắt được và không chuyển trang bậy
+      throw new Error(msg);
     }
   };
 
