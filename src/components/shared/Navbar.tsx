@@ -129,11 +129,9 @@ const Navbar = () => {
                   </DropdownMenuItem>
                   
                   <DropdownMenuItem onClick={() => navigate("/dashboard")} className="cursor-pointer py-2 font-medium">
-                    <LayoutDashboard className="w-4 h-4 mr-2 text-slate-500" />
-                    Dashboard
+                    <History className="w-4 h-4 mr-2 text-slate-500" />My Bookings
                   </DropdownMenuItem>
 
-                  <DropdownMenuSeparator />
 
                   <DropdownMenuItem
                     onClick={logout}
