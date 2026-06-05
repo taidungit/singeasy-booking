@@ -23,6 +23,13 @@ type BookingAction =
   | { type: "SET_SCHEDULE"; payload: { date: string; startTime: string; hours: number } }
   | { type: "CLEAR_BOOKING" };
 
+// 🌟 Hàm helper lấy giờ hiện tại của hệ thống và làm tròn (VD: 14:25 -> "14:00") làm giá trị mặc định động
+const getSystemCurrentHourStr = (): string => {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, "0");
+  return `${hours}:00`;
+};
+
 // Reducer xử lý biến đổi trạng thái dựa theo từng loại Action cụ thể
 const bookingReducer = (state: BookingState, action: BookingAction): BookingState => {
   switch (action.type) {
@@ -41,11 +48,11 @@ const bookingReducer = (state: BookingState, action: BookingAction): BookingStat
     case "SET_SCHEDULE":
       return { ...state, ...action.payload };
     case "CLEAR_BOOKING":
-      // Reset về trạng thái ban đầu khi đặt phòng thành công hoặc hủy
+      // Reset về trạng thái ban đầu dựa trên thời gian thực tế thay vì fix chết 18:00
       return { 
         selectedRoom: null, 
         date: "", 
-        startTime: "18:00", 
+        startTime: getSystemCurrentHourStr(), 
         hours: 2, 
         shopId: null, 
         shopName: null, 
@@ -70,7 +77,7 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(bookingReducer, {
     selectedRoom: null,
     date: "",
-    startTime: "18:00",
+    startTime: getSystemCurrentHourStr(), // 🌟 Khởi tạo động theo giờ thực của khách lúc mở app
     hours: 2,
     shopId: null,
     shopName: null,

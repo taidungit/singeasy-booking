@@ -6,31 +6,47 @@ import { fetchUserBookings, cancelBooking } from "@/services/api";
 import type { Booking } from "@/services/api";
 import { Button } from "@/components/ui/button";
 
-// 1. Đồng bộ cấu hình giao diện theo Enum in hoa từ Spring Boot Backend
+// Import đầy đủ các thành phần của AlertDialog từ Shadcn UI
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 const statusConfig = {
   CONFIRMED: { label: "Confirmed", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   PENDING: { label: "Pending", cls: "bg-amber-50 text-amber-700 border-amber-200" },
   CANCELLED: { label: "Cancelled", cls: "bg-rose-50 text-rose-700 border-rose-200" },
 };
 
+// ==========================================
+// COMPONENT CON: CELL HIỂN THỊ ĐƠN ĐẶT PHÒNG
+// ==========================================
 const BookingCard = ({ booking, onCancel }: { booking: Booking; onCancel: (id: number | string) => void }) => {
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isOpen, setIsOpen] = useState(false); // Quản lý đóng mở modal tinh tế
   
-  // 🌟 Lấy ngày hôm nay định dạng YYYY-MM-DD để tính toán chính xác tuyệt đối, không bị lệch múi giờ
-  const todayStr = new Date().toISOString().split("T")[0];
-  
-  // 🌟 Đơn phòng được tính là quá khứ (isPast = true) nếu ngày đặt nhỏ hơn ngày hôm nay
-  const isPast = booking.bookingDate < todayStr;
+  // Kiểm tra thời gian thực tế để check quá hạn chuẩn xác tuyệt đối cả Ngày + Giờ
+  const now = new Date();
+  const currentDateTimeStr = now.toISOString().substring(0, 16); 
+  const bookingDateTimeStr = `${booking.bookingDate}T${booking.startTime?.substring(0, 5)}`;
+  const isPast = bookingDateTimeStr < currentDateTimeStr;
+
   const cfg = statusConfig[booking.status] || statusConfig.PENDING;
 
-  const handleCancel = async () => {
-    if (!confirm("Are you sure you want to cancel this booking?")) return;
+  // Xử lý gọi API hủy đơn khi khách hàng nhấn xác nhận thật sự "Yes, Cancel" trong Modal
+  const handleExecuteCancel = async () => {
+    setIsOpen(false); // Đóng ngay modal tránh double-click
     setIsCancelling(true);
     try {
-      // Gọi API hủy phòng dưới Backend
-      await cancelBooking(booking.id);
-      // Gọi callback để update UI ngay lập tức
-      onCancel(booking.id);
+      await cancelBooking(booking.id); // Gọi API Backend thực tế
+      onCancel(booking.id);            // Cập nhật State trong RAM ở Component cha
     } catch (error) {
       console.error("Cancel booking error:", error);
     } finally {
@@ -38,7 +54,6 @@ const BookingCard = ({ booking, onCancel }: { booking: Booking; onCancel: (id: n
     }
   };
 
-  // Hàm helper xử lý hiển thị ngày đặt an toàn, tránh dính lỗi "Invalid Date" xám xịt
   const renderFormattedDate = (dateStr: string) => {
     if (!dateStr) return "N/A";
     const parsedDate = new Date(dateStr + "T00:00:00");
@@ -47,7 +62,6 @@ const BookingCard = ({ booking, onCancel }: { booking: Booking; onCancel: (id: n
       : parsedDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
 
-  // Hàm helper xử lý hiển thị ngày tạo hệ thống (createdAt), né lỗi Invalid Date
   const renderCreatedAtDate = (createdAtStr: string) => {
     if (!createdAtStr) return "N/A";
     const parsedDate = new Date(createdAtStr);
@@ -84,7 +98,6 @@ const BookingCard = ({ booking, onCancel }: { booking: Booking; onCancel: (id: n
         </span>
         <span className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-slate-400" />
-          {/* Cắt lấy HH:mm, fallback nếu trống data */}
           {booking.startTime ? booking.startTime.substring(0, 5) : "--:--"} · {booking.duration} {booking.duration === 1 ? "hour" : "hours"}
         </span>
         <span className="text-xs text-slate-400 sm:text-right flex items-center sm:justify-end">
@@ -92,7 +105,6 @@ const BookingCard = ({ booking, onCancel }: { booking: Booking; onCancel: (id: n
         </span>
       </div>
 
-      {/* 🌟 NÚT HỦY PHÒNG LỘ DIỆN Ở ĐÂY: Hiện nếu đơn chưa bị hủy ở Backend và chưa quá ngày đi hát */}
       {booking.status !== "CANCELLED" && !isPast && (
         <div className="mt-4 flex gap-2 border-t border-slate-50 pt-3 justify-end">
           <Link to={`/shops/${booking.shopId}`}>
@@ -100,21 +112,57 @@ const BookingCard = ({ booking, onCancel }: { booking: Booking; onCancel: (id: n
               View Venue <ArrowRight className="w-3 h-3" />
             </Button>
           </Link>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs h-9 font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl active:scale-95 transition-transform"
-            onClick={handleCancel}
-            disabled={isCancelling}
-          >
-            {isCancelling ? <><Loader2 className="w-3 h-3 animate-spin mr-1" /> Cancelling...</> : "Cancel booking"}
-          </Button>
+
+          {/* TÍNH HỢP BỘ MODAL SHADCN CHUẨN (NÚT BẤM KHÔNG CÒN ONCLICK CHỨA CONFIRM) */}
+          <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-9 font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl active:scale-95 transition-transform"
+                disabled={isCancelling}
+              >
+                {isCancelling ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin mr-1" /> Cancelling...
+                  </>
+                ) : (
+                  "Cancel booking"
+                )}
+              </Button>
+            </AlertDialogTrigger>
+            
+            <AlertDialogContent className="rounded-2xl max-w-[400px] bg-white p-6 border border-slate-100 shadow-xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="font-bold text-slate-900 text-lg">
+                  Cancel this booking?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-sm text-slate-500 font-medium pt-1 leading-relaxed">
+                  Are you absolutely sure? This action cannot be undone and your karaoke session slot will be released immediately.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="gap-2 mt-4 flex justify-end">
+                <AlertDialogCancel className="rounded-xl font-semibold border-slate-200 text-slate-700 hover:bg-slate-100 text-xs h-9 px-4">
+                  No, Keep it
+                </AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleExecuteCancel}
+                  className="rounded-xl font-bold bg-rose-600 hover:bg-rose-700 text-white text-xs h-9 px-4 border-none shadow-sm transition-colors"
+                >
+                  Yes, Cancel
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
     </div>
   );
 };
 
+// ==========================================
+// COMPONENT CHÍNH: MÀN HÌNH DASHBOARD KHÁCH
+// ==========================================
 const Dashboard = () => {
   const { state: authState } = useAuth();
   const navigate = useNavigate();
@@ -122,7 +170,6 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"upcoming" | "history">("upcoming");
 
-  // Chuỗi ngày hiện tại định dạng "YYYY-MM-DD" dùng chung để đồng bộ stats và bộ lọc tab
   const todayStr = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
@@ -138,14 +185,13 @@ const Dashboard = () => {
       .finally(() => setIsLoading(false));
   }, [authState.isAuthenticated, navigate]);
 
-  const handleCancel = (id: number | string) => {
-    // Cập nhật State trong RAM ngay lập tức để tab history nhảy số
+  // Đồng bộ cập nhật mảng state RAM cục bộ sau khi một thẻ con báo hủy thành công
+  const handleCancelCallback = (id: number | string) => {
     setBookings((prev) =>
       prev.map((b) => (b.id === id ? { ...b, status: "CANCELLED" as const } : b))
     );
   };
 
-  // Đồng bộ bộ lọc Tab bằng cách so sánh String trực tiếp cho chính xác múi giờ
   const upcoming = bookings.filter(
     (b) => b.bookingDate >= todayStr && b.status !== "CANCELLED"
   );
@@ -168,7 +214,7 @@ const Dashboard = () => {
           <p className="text-sm font-medium text-slate-500 mt-0.5">{authState.user?.email}</p>
         </div>
 
-        {/* Stats Card - Đã đồng bộ logic đếm số lượng dựa trên chuỗi ngày mới */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           {[
             { label: "Total bookings", value: bookings.length },
@@ -208,7 +254,7 @@ const Dashboard = () => {
         ) : (
           <div className="space-y-4">
             {(activeTab === "upcoming" ? upcoming : history).map((booking) => (
-              <BookingCard key={booking.id} booking={booking} onCancel={handleCancel} />
+              <BookingCard key={booking.id} booking={booking} onCancel={handleCancelCallback} />
             ))}
             
             {(activeTab === "upcoming" ? upcoming : history).length === 0 && (
