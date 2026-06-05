@@ -1,20 +1,20 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { MapPin, Clock, Phone, Star, ArrowLeft, ChevronRight } from "lucide-react";
+import { MapPin, Clock, Phone, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchShopById, fetchRoomsByShop, getReviewsByShop } from "@/services/api";
 import type { Shop, Room, Review } from "@/services/api";
 import RoomCard from "@/components/shop/RoomCard";
 import ReviewList from "@/components/shop/ReviewList";
 import RatingStars from "@/components/shared/RatingStars";
-import BookingForm from "@/components/booking/BookingForm";
+
 import roomBlueImg from "@/assets/room-blue.jpg";
 import roomVipImg from "@/assets/room-vip.jpg";
 import roomCozyImg from "@/assets/room-cozy.jpg";
 import roomGallery1Img from "@/assets/room-gallery-1.jpg";
-import axiosClient from "@/services/axiosClient";
 
-const GALLERY_IMGS = [roomBlueImg, roomVipImg, roomCozyImg, roomGallery1Img];
+// Giữ lại làm ảnh dự phòng (fallback) nếu shop không có đủ 4 phòng
+const FALLBACK_IMGS = [roomBlueImg, roomVipImg, roomCozyImg, roomGallery1Img];
 
 const ShopDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,7 +25,7 @@ const ShopDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"rooms" | "reviews">("rooms");
 
-useEffect(() => {
+  useEffect(() => {
     const loadData = async () => {
       if (!id) return;
       try {
@@ -34,12 +34,12 @@ useEffect(() => {
         const [shopData, roomsData, reviewsData] = await Promise.all([
           fetchShopById(id),
           fetchRoomsByShop(id),
-          getReviewsByShop(id), // Gọi endpoint mới /api/v1/reviews/shop/{shopId}
+          getReviewsByShop(id),
         ]);
 
         setShop(shopData);
         setRooms(Array.isArray(roomsData) ? roomsData : []);
-        setReviews(Array.isArray(reviewsData) ? reviewsData : []); // Nạp dữ liệu vào state reviews thành công
+        setReviews(Array.isArray(reviewsData) ? reviewsData : []);
       } catch (error) {
         console.error("Error fetching shop details:", error);
       } finally {
@@ -49,6 +49,7 @@ useEffect(() => {
 
     loadData();
   }, [id]);
+
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -58,6 +59,7 @@ useEffect(() => {
       </div>
     );
   }
+
   if (!shop) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center">
@@ -67,6 +69,14 @@ useEffect(() => {
       </div>
     );
   }
+
+  // Tạo mảng 4 ảnh cho Gallery: Ưu tiên lấy ảnh từ room, thiếu ô nào sẽ bù bằng FALLBACK_IMGS
+  const galleryDisplayImages = Array.from({ length: 4 }).map((_, index) => {
+    if (rooms[index] && rooms[index].imageUrl) {
+      return rooms[index].imageUrl;
+    }
+    return FALLBACK_IMGS[index];
+  });
 
   return (
     <div className="animate-fade-in">
@@ -83,12 +93,19 @@ useEffect(() => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Gallery grid */}
         <div className="grid grid-cols-4 grid-rows-2 gap-3 h-[360px] sm:h-[480px] rounded-3xl overflow-hidden mb-8">
+          {/* Ảnh lớn bên trái lấy từ Shop */}
           <div className="col-span-2 row-span-2">
             <img src={shop.imageUrl} alt={shop.name} className="w-full h-full object-cover" />
           </div>
-          {GALLERY_IMGS.slice(0, 4).map((img, i) => (
-            <div key={i} className="overflow-hidden">
-              <img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+          
+          {/* 4 ảnh nhỏ bên phải lấy từ danh sách phòng (tối đa 4) */}
+          {galleryDisplayImages.map((img, i) => (
+            <div key={i} className="overflow-hidden bg-muted">
+              <img 
+                src={img} 
+                alt={`Room Gallery ${i}`} 
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" 
+              />
             </div>
           ))}
         </div>
@@ -176,86 +193,73 @@ useEffect(() => {
                 <span className="text-sm text-muted-foreground">{shop.reviewCount} reviews</span>
               </div>
 
-{/* Venue info */}
-<div className="space-y-6">
+              {/* Venue info */}
+              <div className="space-y-6">
+                {/* Location */}
+                <div className="flex items-start gap-3 text-sm">
+                  <MapPin className="w-4 h-4 mt-0.5 text-primary" />
+                  <div>
+                    <p className="font-medium text-foreground">Location</p>
+                    <p className="text-muted-foreground">{shop.address}</p>
+                  </div>
+                </div>
 
-  {/* Location */}
-  <div className="flex items-start gap-3 text-sm">
-    <MapPin className="w-4 h-4 mt-0.5 text-primary" />
-    <div>
-      <p className="font-medium text-foreground">Location</p>
-      <p className="text-muted-foreground">{shop.address}</p>
-    </div>
-  </div>
+                {/* Opening hours */}
+                <div className="flex items-start gap-3 text-sm">
+                  <Clock className="w-4 h-4 mt-0.5 text-primary" />
+                  <div>
+                    <p className="font-medium text-foreground">Opening hours</p>
+                    <p className="text-muted-foreground">{shop.openingHours}</p>
+                  </div>
+                </div>
 
-  {/* Opening hours */}
-  <div className="flex items-start gap-3 text-sm">
-    <Clock className="w-4 h-4 mt-0.5 text-primary" />
-    <div>
-      <p className="font-medium text-foreground">Opening hours</p>
-      <p className="text-muted-foreground">{shop.openingHours}</p>
-    </div>
-  </div>
+                {/* Phone */}
+                <div className="flex items-start gap-3 text-sm">
+                  <Phone className="w-4 h-4 mt-0.5 text-primary" />
+                  <div>
+                    <p className="font-medium text-foreground">Contact</p>
+                    <p className="text-muted-foreground">{shop.phoneNumber}</p>
+                  </div>
+                </div>
 
-  {/* Phone */}
-  <div className="flex items-start gap-3 text-sm">
-    <Phone className="w-4 h-4 mt-0.5 text-primary" />
-    <div>
-      <p className="font-medium text-foreground">Contact</p>
-      <p className="text-muted-foreground">{shop.phoneNumber}</p>
-    </div>
-  </div>
+                {/* Divider */}
+                <div className="border-t border-border pt-5">
+                  {/* Highlights */}
+                  <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                    Highlights
+                  </p>
 
-  {/* Divider */}
-  <div className="border-t border-border pt-5">
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-center gap-2">🎤 Premium karaoke sound system</li>
+                    <li className="flex items-center gap-2">🎵 80,000+ song library</li>
+                    <li className="flex items-center gap-2">🍸 Cocktail & drink service</li>
+                    <li className="flex items-center gap-2">🎥 4K screens in VIP rooms</li>
+                  </ul>
+                </div>
 
-    {/* Highlights */}
-    <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-      Highlights
-    </p>
+                {/* Amenities */}
+                <div className="border-t border-border pt-5">
+                  <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                    Amenities
+                  </p>
 
-    <ul className="space-y-2 text-sm text-muted-foreground">
-      <li className="flex items-center gap-2">
-        🎤 Premium karaoke sound system
-      </li>
-      <li className="flex items-center gap-2">
-        🎵 80,000+ song library
-      </li>
-      <li className="flex items-center gap-2">
-        🍸 Cocktail & drink service
-      </li>
-      <li className="flex items-center gap-2">
-        🎥 4K screens in VIP rooms
-      </li>
-    </ul>
-  </div>
-
-  {/* Amenities */}
-<div className="border-t border-border pt-5">
-  <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-    Amenities
-  </p>
-
-  <div className="flex flex-wrap gap-2">
-    {/* Kiểm tra nếu shop có mảng amenities thì render, nếu không hiển thị thông báo hoặc mảng mặc định */}
-    {shop.amenities && shop.amenities.length > 0 ? (
-      shop.amenities.map((amenity, index) => (
-        <span key={index} className="text-xs bg-muted px-2 py-1 rounded-full">
-          {amenity}
-        </span>
-      ))
-    ) : (
-      /* Fallback nếu database chưa có dữ liệu cho shop này */
-      ["Private rooms", "Air conditioning"].map((item) => (
-        <span key={item} className="text-xs bg-muted px-2 py-1 rounded-full">
-          {item}
-        </span>
-      ))
-    )}
-  </div>
-</div>
-
-</div>
+                  <div className="flex flex-wrap gap-2">
+                    {shop.amenities && shop.amenities.length > 0 ? (
+                      shop.amenities.map((amenity, index) => (
+                        <span key={index} className="text-xs bg-muted px-2 py-1 rounded-full">
+                          {amenity}
+                        </span>
+                      ))
+                    ) : (
+                      ["Private rooms", "Air conditioning"].map((item) => (
+                        <span key={item} className="text-xs bg-muted px-2 py-1 rounded-full">
+                          {item}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </aside>
         </div>

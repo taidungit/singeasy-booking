@@ -219,7 +219,7 @@ const BookingForm = () => {
                   disabled={disabled}
                   className={disabled ? "text-slate-400 bg-slate-100 line-through" : "text-foreground font-medium"}
                 >
-                  {t} {disabled ? "(Unavailable)" : ""}
+                  {t} 
                 </option>
               );
             })}
