@@ -32,7 +32,7 @@ export interface Room {
   imageUrl: string;
   status: string; 
   amenities: string[];
-  isFullyBooked: boolean;
+  fullyBooked: boolean;
 }
 
 // Kiểu dữ liệu Đơn đặt phòng nhận về từ Backend (BookingResDto)

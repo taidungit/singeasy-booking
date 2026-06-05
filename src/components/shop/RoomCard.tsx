@@ -5,7 +5,7 @@ import { useBooking } from "@/context/BookingContext";
 import { useNavigate } from "react-router-dom";
 
 interface RoomCardProps {
-  room: Room & { fullyBooked?: boolean }; // Thêm type bổ trợ nếu type Room cũ chưa định nghĩa trường này
+  room: Room; 
   shopId: string;
   shopName: string;
 }
