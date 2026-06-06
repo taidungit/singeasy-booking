@@ -28,6 +28,7 @@ import AdminUserDetail from "./pages/admin/AdminUserDetail";
 import BookingManagement from "./pages/admin/BookingManagement";
 import Contact from "./pages/Contact";
 import Profile from "./pages/Profile";
+import RoomDetail from "./pages/admin/RoomDetail";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,7 @@ const App = () => (
                 <Route path="shops/:shopId/rooms" element={<RoomManagement />} />
                 <Route path="shops/:shopId/rooms/create" element={<RoomForm />} />
                 <Route path="shops/:shopId/rooms/edit/:roomId" element={<RoomForm />} />
+                <Route path="shops/:shopId/rooms/:roomId" element={<RoomDetail />} /> {/* Thêm route chi tiết phòng */}
                 {/* User admin */}
                 <Route path="users" element={<UserManagement />} />
                 <Route path="users/create" element={<UserForm />} />

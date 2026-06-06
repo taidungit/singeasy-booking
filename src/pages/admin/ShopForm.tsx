@@ -32,8 +32,8 @@ const ShopForm = () => {
     labels: [] as string[],
   });
 
-  const [amenityOptions, setAmenityOptions] = useState<string[]>([]); // Dynamic Amenities từ BE
-  const [labelOptions, setLabelOptions] = useState<string[]>([]);     // ĐÃ CẬP NHẬT: Dynamic Labels từ BE
+  const [amenityOptions, setAmenityOptions] = useState<string[]>([]); 
+  const [labelOptions, setLabelOptions] = useState<string[]>([]);    
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +43,6 @@ const ShopForm = () => {
       try {
         setLoading(true);
         
-        // Fetch song song cả amenities và labels từ BE giúp tối ưu thời gian loading
         const [amenityRes, labelRes] = await Promise.all([
           axiosClient.get("/amenities"),
           axiosClient.get("/labels")
@@ -55,7 +54,6 @@ const ShopForm = () => {
         const labels = (labelRes as AxiosResponse<string[]>).data || labelRes;
         setLabelOptions(Array.isArray(labels) ? labels : []);
 
-        // Nếu ở chế độ Edit, fetch thông tin chi tiết của Shop
         if (isEdit && id) {
           const res = await axiosClient.get<Shop>(`/shops/${id}`);
           const shopData = (res as AxiosResponse<Shop>).data;
@@ -101,6 +99,15 @@ const ShopForm = () => {
     }
   };
 
+  // ADDED: Handler to restrict phone number to digits only
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Only update state if the value is completely empty or contains only numbers
+    if (value === "" || /^[0-9]+$/.test(value)) {
+      setFormData(prev => ({ ...prev, phoneNumber: value }));
+    }
+  };
+
   const handleToggleAmenity = (item: string) => {
     setFormData(prev => ({
       ...prev,
@@ -110,7 +117,6 @@ const ShopForm = () => {
     }));
   };
 
-  // ĐÃ BỔ SUNG: Hàm toggle cho Label cho code gọn gàng, đồng bộ
   const handleToggleLabel = (tag: string) => {
     setFormData(prev => ({
       ...prev,
@@ -127,6 +133,11 @@ const ShopForm = () => {
     const { name, city, address, phoneNumber, minPricePerHour } = formData;
     if (!name || !city || !address || !phoneNumber || !minPricePerHour) {
       return toast.error("Please fill in all required fields (*)");
+    }
+
+    // Additional validation check right before submitting
+    if (phoneNumber.length < 9 || phoneNumber.length > 11) {
+      return toast.error("Phone number must be between 9 and 11 digits long");
     }
 
     setLoading(true);
@@ -180,9 +191,20 @@ const ShopForm = () => {
                     <Label className="flex items-center gap-2 font-semibold"><MapPin size={16}/> City *</Label>
                     <Input required value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="rounded-xl h-11" />
                   </div>
+                  
+                  {/* MODIFIED: Phone Number Input Field */}
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2 font-semibold"><Phone size={16}/> Phone Number *</Label>
-                    <Input required value={formData.phoneNumber} onChange={e => setFormData({...formData, phoneNumber: e.target.value})} className="rounded-xl h-11" />
+                    <Input 
+                      required 
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={11}
+                      placeholder="0987654321"
+                      value={formData.phoneNumber} 
+                      onChange={handlePhoneChange} 
+                      className="rounded-xl h-11" 
+                    />
                   </div>
                 </div>
 
@@ -249,7 +271,6 @@ const ShopForm = () => {
                 <div className="space-y-3">
                   <Label className="flex items-center gap-2 font-semibold"><Tag size={16}/> Display Labels</Label>
                   <div className="flex flex-wrap gap-2">
-                    {/* ĐÃ SỬA: Map qua labelOptions lấy từ BE thay vì LABEL_OPTIONS static */}
                     {labelOptions.length > 0 ? labelOptions.map(tag => (
                       <button
                         key={tag}

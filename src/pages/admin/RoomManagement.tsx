@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, ChevronLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { 
   AlertDialog, 
@@ -116,6 +116,16 @@ const RoomManagement = () => {
                     </span>
                   </TableCell>
                   <TableCell className="text-right space-x-2">
+                    {/* THÊM VÀO ĐÂY: Nút view hình con mắt */}
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-slate-600 hover:bg-slate-100"
+                      onClick={() => navigate(`/admin/shops/${shopId}/rooms/${room.id}`)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+
                     <Button 
                       variant="ghost" 
                       size="sm" 
