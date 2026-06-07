@@ -35,14 +35,15 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-surface px-4 py-10">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-6">
-                     <div className="w-16 h-16 relative overflow-hidden rounded-xl border border-slate-600/40 bg-slate-900 shadow-md flex-shrink-0">
-            <img 
-              src={logo} 
-              alt="Royal Logo"
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-          </div>
+          <Link to="/" className="group inline-block mb-5">
+            {/* Khung chứa logo được thiết kế to lên (w-20 h-20), đổ bóng vàng gold nhẹ */}
+            <div className="w-20 h-20 relative overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-950 shadow-xl shadow-primary/5 transition-all duration-300 group-hover:border-primary/40 group-hover:shadow-primary/10 flex items-center justify-center">
+              <img 
+                src={logo} 
+                alt="SingEasy Logo"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
           </Link>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Welcome back</h1>
           <p className="text-muted-foreground text-sm mt-1">Sign in to continue booking karaoke rooms</p>

@@ -53,11 +53,11 @@ const Navbar = () => {
           >
             <img 
               src={logo} 
-              alt="Royal Logo"
+              alt="SingEasy Logo"
               className="w-11 h-11 object-cover rounded-xl transition-transform group-hover:scale-105"
             />
             <span className="font-bold text-lg tracking-tight text-foreground">
-              Royal
+              SingEasy
             </span>
           </Link>
 

@@ -95,13 +95,13 @@ const AdminLayout = () => {
             <div className="w-12 h-12 relative overflow-hidden rounded-xl border border-slate-600/40 bg-slate-900 shadow-md flex-shrink-0">
               <img 
                 src={logo} 
-                alt="Royal Logo"
+                alt="SingEasy Logo"
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
             </div>
             {/* Tăng cỡ chữ từ text-base/text-lg lên text-xl font-bold */}
             <span className="font-bold text-xl tracking-tight text-white transition-colors duration-200 group-hover:text-blue-400">
-              Royal
+              SingEasy
             </span>
           </Link>
         </div>

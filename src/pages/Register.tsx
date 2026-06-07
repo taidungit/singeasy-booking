@@ -70,7 +70,7 @@ const Register = () => {
             <div className="w-20 h-20 relative overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-950 shadow-xl shadow-primary/5 transition-all duration-300 group-hover:border-primary/40 group-hover:shadow-primary/10 flex items-center justify-center">
               <img 
                 src={logo} 
-                alt="Royal Logo"
+                alt="SingEasy Logo"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
             </div>
