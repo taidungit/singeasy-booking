@@ -53,7 +53,7 @@ const SearchBar = ({
   // Xử lý gửi các tham số tìm kiếm lên URL (Chuẩn hóa tên param đồng bộ với API)
   const handleSearch = () => {
     const params = new URLSearchParams();
-    if (query.trim()) params.set("query", query.trim());
+    if (query.trim()) params.set("name", query.trim());
     if (location !== "all") params.set("city", location);
     if (capacity !== "all") params.set("capacity", capacity); // 🌟 Thêm param capacity
     

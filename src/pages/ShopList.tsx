@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { X } from "lucide-react";
 import ShopCard from "@/components/shop/ShopCard";
 import SearchBar from "@/components/booking/SearchBar";
-import { fetchShops, fetchFilteredShops, type Shop } from "@/services/api"; // Import 2 hàm API riêng biệt
+import { fetchShops, fetchFilteredShops, type Shop } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -31,8 +31,8 @@ const ShopList = () => {
   const [priceRange, setPriceRange] = useState(0);
   const [sortBy, setSortBy] = useState<"rating" | "price_asc" | "price_desc">("rating");
 
-  // Đọc chính xác các param từ thanh URL (?q=...&city=...) do SearchBar đẩy lên
-  const query = searchParams.get("q") ?? "";
+  // 🟢 ĐỒNG BỘ: Sửa từ "q" thành "name" để đọc đúng param từ SearchBar truyền sang
+  const query = searchParams.get("name") ?? "";
   const city = searchParams.get("city") ?? "all";
 
   const loadShops = useCallback(async () => {
@@ -48,7 +48,7 @@ const ShopList = () => {
       if (hasFilter) {
         // 🟢 NẾU CÓ LỌC: Gọi API search nâng cao (/api/v1/shops/search)
         responseData = await fetchFilteredShops({
-          name: query || undefined,
+          name: query || undefined, // Bắt chính xác tên quán từ ô Input đã đồng bộ
           address: city !== "all" ? city : undefined,
           minRating: minRating || undefined,
           minPrice: range.min > 0 ? range.min : undefined,
@@ -73,7 +73,6 @@ const ShopList = () => {
     } finally {
       setIsLoading(false);
     }
-    // Theo dõi toàn bộ các biến lọc để trigger gọi lại API mỗi khi có thay đổi
   }, [query, city, minRating, priceRange, sortBy]);
 
   useEffect(() => {
@@ -84,7 +83,9 @@ const ShopList = () => {
     <div className="min-h-screen bg-background">
       {/* Sticky search + filter bar */}
       <div className="sticky top-16 z-30 bg-background border-b border-border shadow-sm">
+        {/* Truyền giá trị query (name) hiện tại làm prop ban đầu cho thanh search */}
         <SearchBar variant="inline" initialQuery={query} initialLocation={city} />
+        
         <div className="px-4 sm:px-6 py-3 flex items-center gap-3 overflow-x-auto no-scrollbar">
           <select
             value={sortBy}
