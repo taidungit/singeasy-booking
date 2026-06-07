@@ -6,7 +6,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  avatar?: string; // Khớp chuẩn trường dữ liệu chuỗi Base64
+  avatar?: string;
   role: string;
   phoneNumber?: string;
 }
@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     error: null,
   });
 
-  // TỰ ĐỘNG KHÔI PHỤC USER KHI LOAD LẠI TRANG (F5)
+  // Automatically restore user session on browser refresh
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
     if (savedUser) {
@@ -100,11 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         password: password
       });
 
-      // 💥 LƯU Ý: Đảm bảo Backend JSON trả về có chứa trường user.avatar
       const { access_token, user } = response.data;
-
-      // 🟢 PHÒNG THỦ: Nếu Backend lỡ quên không map avatar vào API Login, 
-      // ta thử bốc từ DB trả về qua thuộc tính avatar/hoặc fallback để tránh đè mất ảnh cũ.
       const userWithAvatar: User = {
         ...user,
         avatar: user.avatar || undefined
@@ -137,31 +133,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       dispatch({ type: "AUTH_READY" });
-      
-      // ✅ ĐÃ XOÁ LỆNH ALERT XẤU XÍ CỦA TRÌNH DUYỆT Ở ĐÂY
-      
     } catch (error: unknown) {
       let msg = "Failed to register. Please try again.";
 
       if (axios.isAxiosError(error)) {
-        msg = error.response?.data?.message || msg;
+        // Fallbacks through possible Spring Boot error response mappings
+        msg = error.response?.data?.message || (typeof error.response?.data === 'string' ? error.response.data : msg);
       } else if (error instanceof Error) {
         msg = error.message;
       }
 
       dispatch({ type: "AUTH_FAILURE", payload: msg });
       
-      // Bắn ngược lỗi ra ngoài để khối try-catch trong Register.tsx bắt được và không chuyển trang bậy
+      // Bubble the error outward so the Register form catch block processes it
       throw new Error(msg);
     }
   };
 
   const logout = () => dispatch({ type: "LOGOUT" });
   const clearError = () => dispatch({ type: "CLEAR_ERROR" });
-  
-  const updateUser = (updatedUser: User) => {
-    dispatch({ type: "UPDATE_USER", payload: updatedUser });
-  };
+  const updateUser = (updatedUser: User) => dispatch({ type: "UPDATE_USER", payload: updatedUser });
 
   return (
     <AuthContext.Provider value={{ state, login, register, logout, clearError, updateUser }}>

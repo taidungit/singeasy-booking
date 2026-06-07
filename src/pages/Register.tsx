@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Loader2, Eye, EyeOff, CheckCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner"; // Thư viện pop-up toast cao cấp
+import { toast } from "sonner";
 import logo from "@/assets/royal-logo.avif";
 
 const Register = () => {
@@ -14,45 +14,67 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // 1. Tự động chuyển hướng nếu người dùng đã đăng nhập trước đó
+  // 1. Redirect if already authenticated
   useEffect(() => {
     if (state.isAuthenticated) navigate("/dashboard");
   }, [state.isAuthenticated, navigate]);
 
-  // 2. Lắng nghe nếu backend trả về lỗi từ AuthContext để bắn pop-up thông báo lỗi
-  useEffect(() => {
-    if (state.error) {
-      toast.error(state.error, {
-        description: "Vui lòng kiểm tra lại thông tin đăng ký.",
-      });
-      clearError(); // Xóa trạng thái lỗi để tránh lặp lại toast
-    }
-  }, [state.error, clearError]);
-
-  // Dọn dẹp lỗi khi unmount component
+  // 2. Clear auth errors on component unmount
   useEffect(() => {
     return () => clearError();
-  }, []);
+  }, [clearError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 🛠️ 1. CHECK VALIDATION PHÍA FRONTEND (Bọc lót chống null / rỗng)
+    if (!name.trim()) {
+      return toast.error("Missing Information", {
+        description: "Please enter your full name.",
+      });
+    }
+
+    if (!email.trim()) {
+      return toast.error("Missing Information", {
+        description: "Please enter your email address.",
+      });
+    }
+
+    // Kiểm tra định dạng Email cơ bản bằng Regex để tránh gửi rác lên Spring Boot
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return toast.error("Invalid Email", {
+        description: "Please enter a valid email address (e.g., alex@example.com).",
+      });
+    }
+
+    if (password.length < 6) {
+      return toast.error("Invalid Password", {
+        description: "Password must be at least 6 characters long.",
+      });
+    }
     
     try {
-      // Gọi hàm đăng ký từ AuthContext (đã xóa sạch lệnh alert hệ thống bên trong)
-      await register(name, email, password);
+      // Execute registration context action
+      await register(name.trim(), email.trim(), password);
       
-      // Hiện thông báo pop-up thành công hiện đại
-      toast.success("Tạo tài khoản thành công!", {
-        description: "Hệ thống đang chuyển bạn sang trang đăng nhập...",
+      toast.success("Account created successfully!", {
+        description: "Redirecting you to the login page...",
         duration: 2000,
       });
 
-      // Nhảy sang trang đăng nhập ngay lập tức
       navigate("/login");
-    } catch (err) {
-      // Try-catch bắt lỗi nếu hàm register throw lỗi ra ngoài
-      toast.error("Đăng ký thất bại", {
-        description: "Đã có lỗi xảy ra hoặc email đã được sử dụng.",
+    } catch (err: unknown) {
+      // Ép kiểu an toàn vượt qua ESLint khắt khe, bốc chuẩn "Email already exists!" từ Backend về
+      const errorWithDetail = err as { message?: string };
+      const errorMessage =
+        errorWithDetail?.message ||
+        (typeof err === "string" ? err : null) ||
+        String(err) ||
+        "An unexpected error occurred.";
+
+      toast.error("Registration Failed", {
+        description: errorMessage,
       });
     }
   };
@@ -63,10 +85,9 @@ const Register = () => {
     <div className="min-h-screen flex items-center justify-center bg-surface px-4 py-10">
       <div className="w-full max-w-md">
         
-        {/* KHU VỰC TIÊU ĐỀ: LOGO TOÊN, TỐI GIẢN & CĂN GIỮA BIẾN MẤT CHỮ VỠ */}
+        {/* Header Section (Giữ nguyên w-20 h-20 theo ý bạn) */}
         <div className="text-center mb-8 flex flex-col items-center">
           <Link to="/" className="group inline-block mb-5">
-            {/* Khung chứa logo được thiết kế to lên (w-20 h-20), đổ bóng vàng gold nhẹ */}
             <div className="w-20 h-20 relative overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-950 shadow-xl shadow-primary/5 transition-all duration-300 group-hover:border-primary/40 group-hover:shadow-primary/10 flex items-center justify-center">
               <img 
                 src={logo} 
@@ -79,11 +100,10 @@ const Register = () => {
           <p className="text-muted-foreground text-sm mt-1">Start booking karaoke rooms in seconds</p>
         </div>
 
-        {/* KHU VỰC FORM ĐĂNG KÝ */}
+        {/* Form Container */}
         <div className="bg-background rounded-2xl card-shadow p-8">
-          {/* ĐÃ XÓA KHỐI STATE.ERROR CŨ GÂY XẤU VÀ VỠ LAYOUT */}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {/* noValidate dùng để chặn đứng hoàn toàn bong bóng cũ kỹ của HTML5 */}
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div>
               <label className="field-label">Full name</label>
               <input
@@ -116,7 +136,6 @@ const Register = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
                   className="w-full text-sm border border-border rounded-xl px-3 py-3 pr-10 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-foreground"
                   placeholder="At least 6 characters"
                 />
@@ -129,7 +148,7 @@ const Register = () => {
                 </button>
               </div>
               
-              {/* Thanh đo độ mạnh mật khẩu */}
+              {/* Password Strength Meter */}
               {passwordStrength && (
                 <div className="flex items-center gap-2 mt-1.5">
                   <div className="flex gap-1 flex-1">
@@ -144,7 +163,7 @@ const Register = () => {
                       />
                     ))}
                   </div>
-                  <span className={`text-xs font-medium ${
+                  <span className={`text-xs font-medium uppercase tracking-wider ${
                     passwordStrength === "weak" ? "text-destructive" :
                     passwordStrength === "medium" ? "text-warning" : "text-success"
                   }`}>{passwordStrength}</span>
