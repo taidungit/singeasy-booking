@@ -99,10 +99,8 @@ const ShopForm = () => {
     }
   };
 
-  // ADDED: Handler to restrict phone number to digits only
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Only update state if the value is completely empty or contains only numbers
     if (value === "" || /^[0-9]+$/.test(value)) {
       setFormData(prev => ({ ...prev, phoneNumber: value }));
     }
@@ -130,12 +128,17 @@ const ShopForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const { name, city, address, phoneNumber, minPricePerHour } = formData;
-    if (!name || !city || !address || !phoneNumber || !minPricePerHour) {
+    const { name, city, address, phoneNumber, openingHours, minPricePerHour, imageUrl } = formData;
+    
+    // Giữ lại phần kiểm tra thủ công phòng trường hợp người dùng cố tình lách luật HTML5
+    if (!name || !city || !address || !phoneNumber || !openingHours || !minPricePerHour) {
       return toast.error("Please fill in all required fields (*)");
     }
 
-    // Additional validation check right before submitting
+    if (!imageUrl) {
+      return toast.error("Please upload a cover image for the shop");
+    }
+
     if (phoneNumber.length < 9 || phoneNumber.length > 11) {
       return toast.error("Phone number must be between 9 and 11 digits long");
     }
@@ -172,6 +175,7 @@ const ShopForm = () => {
           <ChevronLeft className="mr-1 h-5 w-5" /> Back to List
         </Button>
 
+        {/* 💡 LƯU Ý: Không được để thuộc tính noValidate ở đây để trình duyệt tự kích hoạt bong bóng lỗi */}
         <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-[24px] shadow-sm overflow-hidden">
           <fieldset disabled={loading} className="contents">
             <div className="p-8 border-b border-slate-100 bg-white">
@@ -181,18 +185,20 @@ const ShopForm = () => {
 
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-5">
+                {/* 1. Shop Name */}
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2 font-semibold"><Store size={16}/> Shop Name *</Label>
                   <Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="rounded-xl h-11" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
+                  {/* 2. City */}
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2 font-semibold"><MapPin size={16}/> City *</Label>
                     <Input required value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="rounded-xl h-11" />
                   </div>
                   
-                  {/* MODIFIED: Phone Number Input Field */}
+                  {/* 3. Phone Number */}
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2 font-semibold"><Phone size={16}/> Phone Number *</Label>
                     <Input 
@@ -208,22 +214,27 @@ const ShopForm = () => {
                   </div>
                 </div>
 
+                {/* 4. Detailed Address */}
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2 font-semibold"><MapPin size={16}/> Detailed Address *</Label>
                   <Input required value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="rounded-xl h-11" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
+                  {/* 5. Operating Hours (Backend dùng @NotBlank nên bắt buộc phải có required) */}
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2 font-semibold"><Clock size={16}/> Operating Hours</Label>
-                    <Input placeholder="08:00 - 23:00" value={formData.openingHours} onChange={e => setFormData({...formData, openingHours: e.target.value})} className="rounded-xl h-11" />
+                    <Label className="flex items-center gap-2 font-semibold"><Clock size={16}/> Operating Hours *</Label>
+                    <Input required placeholder="08:00 - 23:00" value={formData.openingHours} onChange={e => setFormData({...formData, openingHours: e.target.value})} className="rounded-xl h-11" />
                   </div>
+                  
+                  {/* 6. Min Price */}
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2 font-semibold"><DollarSign size={16}/> Min Price / hr *</Label>
                     <Input required type="number" value={formData.minPricePerHour} onChange={e => setFormData({...formData, minPricePerHour: e.target.value})} className="rounded-xl h-11" />
                   </div>
                 </div>
                 
+                {/* 7. Image Wrapper */}
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2 font-semibold"><ImageIcon size={16}/> Shop Cover Image *</Label>
                   <div 
@@ -243,6 +254,7 @@ const ShopForm = () => {
                         <span className="text-xs text-slate-500">Upload image from device</span>
                       </>
                     )}
+                    {/* Thẻ input file ẩn không cần thuộc tính required vì nó lấy dữ liệu từ nút bấm bọc ngoài thông qua logic state */}
                     <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
                   </div>
                 </div>
@@ -290,6 +302,7 @@ const ShopForm = () => {
                   </div>
                 </div>
 
+                {/* 8. Description (Trường này tùy chọn, không bắt buộc điền nên không thêm required) */}
                 <div className="space-y-2">
                   <Label className="font-semibold text-slate-700">Shop Description</Label>
                   <Textarea 
