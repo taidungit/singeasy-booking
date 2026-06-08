@@ -155,10 +155,18 @@ const Booking = () => {
                   <Calendar className="w-3.5 h-3.5 text-primary" />
                   {new Date(state.date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
                 </p>
-                <p className="flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-primary" />
-                  {state.startTime} — {(parseInt(state.startTime.split(":")[0]) + state.hours).toString().padStart(2, "0")}:00
-                </p>
+                  <p className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-primary" />
+                    {state.startTime} — {
+                      (() => {
+                        const [startHourStr, startMinuteStr] = state.startTime.split(":");
+                        const startHour = parseInt(startHourStr, 10);
+                        const endHour = (startHour + state.hours) % 24;
+                        const endMinute = startMinuteStr || "00";
+                        return `${endHour.toString().padStart(2, "0")}:${endMinute}`;
+                      })()
+                    }
+                  </p>
               </div>
             )}
           </div>
